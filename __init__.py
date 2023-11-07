@@ -317,6 +317,30 @@ class ImageScaleToSide:
         cls = cls.movedim(1, -1)
         return (cls,)
 
+class NovelToFizz:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {"text": ("STRING", {"multiline": True})}}
+
+    RETURN_TYPES = ("STRING", "INT",)
+
+    FUNCTION = "novelToFizz"
+    CATEGORY = "badger"
+
+    def novelToFizz(self, text):
+        textA = text.split("\n")
+        lines = 0
+        outText = ""
+        for line in textA:
+            if(len(line)>0):
+                line = "\""+str(lines)+"\":\""+line+"\",\n"
+                lines = lines+1
+                outText = outText+line
+        outText = outText[:-2]
+        return (outText, lines, )
 
 
 
@@ -326,7 +350,8 @@ NODE_CLASS_MAPPINGS = {
     "IntToString-badger": IntToString,
     "FloatToString-badger": FloatToString,
     "ImageNormalization-badger": ImageNormalization,
-    "ImageScaleToSide-badger": ImageScaleToSide
+    "ImageScaleToSide-badger": ImageScaleToSide,
+    "NovelToFizz-badger": NovelToFizz
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
