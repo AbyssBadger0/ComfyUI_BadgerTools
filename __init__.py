@@ -317,7 +317,7 @@ class ImageScaleToSide:
         cls = cls.movedim(1, -1)
         return (cls,)
 
-class NovelToFizz:
+class StringToFizz:
     def __init__(self):
         pass
 
@@ -327,10 +327,10 @@ class NovelToFizz:
 
     RETURN_TYPES = ("STRING", "INT",)
 
-    FUNCTION = "novelToFizz"
+    FUNCTION = "stringToFizz"
     CATEGORY = "badger"
 
-    def novelToFizz(self, text):
+    def stringToFizz(self, text):
         textA = text.split("\n")
         lines = 0
         outText = ""
@@ -342,6 +342,30 @@ class NovelToFizz:
         outText = outText[:-2]
         return (outText, lines, )
 
+class TextListToString:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {"texts": ("STRING", {"multiline": True})}}
+
+    RETURN_TYPES = ("STRING",)
+
+    INPUT_IS_LIST = True
+
+    FUNCTION = "textListToString"
+    CATEGORY = "badger"
+
+    def textListToString(self, texts):
+        fullString = ""
+        if len(texts) <= 1:
+            return (texts, )
+        else:
+            for text in texts:
+                fullString += text + "\n"
+            return (fullString, )
+
 
 
 NODE_CLASS_MAPPINGS = {
@@ -351,7 +375,8 @@ NODE_CLASS_MAPPINGS = {
     "FloatToString-badger": FloatToString,
     "ImageNormalization-badger": ImageNormalization,
     "ImageScaleToSide-badger": ImageScaleToSide,
-    "NovelToFizz-badger": NovelToFizz
+    "StringToFizz-badger": StringToFizz,
+    "TextListToString-badger": TextListToString
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
