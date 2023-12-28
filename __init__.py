@@ -5,10 +5,12 @@ import numpy as np
 import torch
 import comfy.utils
 
+
 def getImageSize(IMAGE) -> tuple[int, int]:
     samples = IMAGE.movedim(-1, 1)
     size = samples.shape[3], samples.shape[2]
     return size
+
 
 def tensorToImg(imageTensor):
     imaget = imageTensor[0]
@@ -22,6 +24,7 @@ def imgToTensor(img):
     imaget = torch.from_numpy(image)[None,]
     return imaget
 
+
 class ImageOverlap:
 
     def __init__(self):
@@ -29,7 +32,6 @@ class ImageOverlap:
 
     @classmethod
     def INPUT_TYPES(s):
-
         return {
             "required": {
                 "base_image": ("IMAGE",),
@@ -60,8 +62,6 @@ class ImageOverlap:
 
     CATEGORY = "badger"
 
-
-
     def overlap(self, base_image, additional_image, x, y):
         b_image = tensorToImg(base_image)
         a_image = tensorToImg(additional_image)
@@ -78,10 +78,9 @@ class FloatToInt:
 
     @classmethod
     def INPUT_TYPES(s):
-
         return {
             "required": {
-                  "float": ("FLOAT", {
+                "float": ("FLOAT", {
                     "default": 1.0,
                     "min": 0.0,
                     "max": 4096.0,
@@ -111,10 +110,9 @@ class IntToString:
 
     @classmethod
     def INPUT_TYPES(s):
-
         return {
             "required": {
-                  "int": ("INT", {
+                "int": ("INT", {
                     "default": 0,
                     "min": 0,
                     "max": 4096,
@@ -136,6 +134,7 @@ class IntToString:
     def intToString(self, int):
         return (str(int),)
 
+
 class FloatToString:
 
     def __init__(self):
@@ -143,10 +142,9 @@ class FloatToString:
 
     @classmethod
     def INPUT_TYPES(s):
-
         return {
             "required": {
-                    "float": ("FLOAT", {
+                "float": ("FLOAT", {
                     "default": 1.0,
                     "min": 0.0,
                     "max": 10.0,
@@ -179,28 +177,28 @@ class ImageNormalization:
 
         return {
             "required": {
-                "width": ("INT",  {
+                "width": ("INT", {
                     "default": 1.0,
                     "min": 0.0,
                     "max": 4096.0,
                     "step": 0.01,
                     "round": 0.01,
                     "display": "number"}),
-                "height": ("INT",  {
+                "height": ("INT", {
                     "default": 1.0,
                     "min": 0.0,
                     "max": 4096.0,
                     "step": 0.01,
                     "round": 0.01,
                     "display": "number"}),
-                "target_width": ("INT",  {
+                "target_width": ("INT", {
                     "default": 1.0,
                     "min": 0.0,
                     "max": 4096.0,
                     "step": 0.01,
                     "round": 0.01,
                     "display": "number"}),
-                "target_height": ("INT",  {
+                "target_height": ("INT", {
                     "default": 1.0,
                     "min": 0.0,
                     "max": 4096.0,
@@ -220,8 +218,8 @@ class ImageNormalization:
     CATEGORY = "badger"
 
     def imageNormalization(self, width, height, target_width, target_height):
-        o_ratio = width/height
-        ratio = target_width/target_height
+        o_ratio = width / height
+        ratio = target_width / target_height
         top = 0
         left = 0
         bottom = 0
@@ -229,22 +227,23 @@ class ImageNormalization:
         nw = 0
         nh = 0
         # 原图比期望尺寸更扁，对齐宽，计算高，补上下
-        if(o_ratio>=ratio):
-            upratio = target_width/width
+        if (o_ratio >= ratio):
+            upratio = target_width / width
             nw = target_width
-            nh = round(height*upratio)
+            nh = round(height * upratio)
             hdiff = target_height - nh
-            top = math.floor(hdiff/2)
-            bottom = math.ceil(hdiff/2)
+            top = math.floor(hdiff / 2)
+            bottom = math.ceil(hdiff / 2)
         else:
-            upratio = target_height/height
-            nw = round(width*upratio)
+            upratio = target_height / height
+            nw = round(width * upratio)
             nh = target_height
             wdiff = target_width - nw
-            left = math.floor(wdiff/2)
-            right = math.ceil(wdiff/2)
+            left = math.floor(wdiff / 2)
+            right = math.ceil(wdiff / 2)
 
         return (nw, nh, top, left, bottom, right,)
+
 
 class ImageScaleToSide:
     upscale_methods = ["nearest-exact", "bilinear", "area"]
@@ -317,6 +316,7 @@ class ImageScaleToSide:
         cls = cls.movedim(1, -1)
         return (cls,)
 
+
 class StringToFizz:
     def __init__(self):
         pass
@@ -335,12 +335,13 @@ class StringToFizz:
         lines = 0
         outText = ""
         for line in textA:
-            if(len(line)>0):
-                line = "\""+str(lines)+"\":\""+line+"\",\n"
-                lines = lines+1
-                outText = outText+line
+            if (len(line) > 0):
+                line = "\"" + str(lines) + "\":\"" + line + "\",\n"
+                lines = lines + 1
+                outText = outText + line
         outText = outText[:-2]
-        return (outText, lines, )
+        return (outText, lines,)
+
 
 class TextListToString:
     def __init__(self):
@@ -360,12 +361,50 @@ class TextListToString:
     def textListToString(self, texts):
         fullString = ""
         if len(texts) <= 1:
-            return (texts, )
+            return (texts,)
         else:
             for text in texts:
                 fullString += text + "\n"
-            return (fullString, )
+            return (fullString,)
 
+
+class getImageSide:
+
+    def __init__(self) -> None:
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "side_choose": (["short", "long"],)}}
+
+    RETURN_TYPES = ("INT",)
+    FUNCTION = "getImageSide"
+
+    CATEGORY = "badger"
+
+    def getImageSide(self, image, side_choose):
+
+        size = getImageSize(image)
+
+        width = int(size[0])
+        height = int(size[1])
+
+        side = 0
+        if width > height:
+            if side_choose == "short":
+                side = height
+            else:
+                side = width
+        else:
+            if side_choose == "short":
+                side = width
+            else:
+                side = height
+
+        return (side,)
 
 
 NODE_CLASS_MAPPINGS = {
@@ -376,7 +415,8 @@ NODE_CLASS_MAPPINGS = {
     "ImageNormalization-badger": ImageNormalization,
     "ImageScaleToSide-badger": ImageScaleToSide,
     "StringToFizz-badger": StringToFizz,
-    "TextListToString-badger": TextListToString
+    "TextListToString-badger": TextListToString,
+    "getImageSide-badger": getImageSide
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
