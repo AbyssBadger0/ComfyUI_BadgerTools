@@ -4,6 +4,7 @@ from PIL import Image
 import numpy as np
 import torch
 import comfy.utils
+from .videoCut import getCutList, saveToDir
 
 
 def getImageSize(IMAGE) -> tuple[int, int]:
@@ -407,6 +408,46 @@ class getImageSide:
         return (side,)
 
 
+class videoCut:
+
+    def __init__(self) -> None:
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "images": ("IMAGE",),
+                "save_name": ("STRING", {"default": "Temp"}),
+                "min_frame": ("INT", {
+                    "default": 16,
+                    "min": 1,
+                    "max": 4096,
+                    "step": 1,
+                    "display": "number"
+                }),
+                "max_frame": ("INT", {
+                    "default": 240,
+                    "min": 1,
+                    "max": 4096,
+                    "step": 1,
+                    "display": "number"
+                })
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "videoCut"
+
+    CATEGORY = "badger"
+
+    def videoCut(self, images, save_name, min_frame, max_frame):
+        cut_list = getCutList(images, min_frame, max_frame)
+        save_path = saveToDir(images, cut_list, save_name)
+
+        return (save_path,)
+
+
 NODE_CLASS_MAPPINGS = {
     "ImageOverlap-badger": ImageOverlap,
     "FloatToInt-badger": FloatToInt,
@@ -416,7 +457,8 @@ NODE_CLASS_MAPPINGS = {
     "ImageScaleToSide-badger": ImageScaleToSide,
     "StringToFizz-badger": StringToFizz,
     "TextListToString-badger": TextListToString,
-    "getImageSide-badger": getImageSide
+    "getImageSide-badger": getImageSide,
+    "VideoCut-badger": videoCut,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
