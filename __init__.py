@@ -494,11 +494,8 @@ class mkdir:
     def mkdir(self, dir_path, new_dir):
         dir_path = os.path.abspath(dir_path)
         new_dir_path = os.path.join(dir_path, new_dir)
-        num = 0
-        while os.path.exists(new_dir_path):
-            new_dir_path = os.path.join(dir_path, new_dir+str(num).zfill(3))
-            num += 0
-        os.mkdir(new_dir_path)
+        if not os.path.exists(new_dir_path):
+            os.mkdir(new_dir_path)
         return (new_dir_path,)
 
 
