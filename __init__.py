@@ -420,7 +420,7 @@ class videoCut:
                 "images": ("IMAGE",),
                 "save_name": ("STRING", {"default": "Temp"}),
                 "min_frame": ("INT", {
-                    "default": 16,
+                    "default": 1,
                     "min": 1,
                     "max": 4096,
                     "step": 1,
