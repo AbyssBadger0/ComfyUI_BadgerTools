@@ -1,4 +1,5 @@
 import math
+import os
 
 from PIL import Image
 import numpy as np
@@ -448,6 +449,59 @@ class videoCut:
         return (save_path,)
 
 
+class getParentDir:
+
+    def __init__(self) -> None:
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "dir_path": ("STRING", {"default": ""}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "getParentdir"
+
+    CATEGORY = "badger"
+
+    def getParentdir(self, dir_path):
+        dir_path = os.path.abspath(dir_path)
+        parent_path = os.path.dirname(dir_path)
+        return (parent_path,)
+
+
+class mkdir:
+    def __init__(self) -> None:
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "dir_path": ("STRING", {"default": ""}),
+                "new_dir": ("STRING", {"default": "newdir"}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "mkdir"
+
+    CATEGORY = "badger"
+
+    def mkdir(self, dir_path, new_dir):
+        dir_path = os.path.abspath(dir_path)
+        new_dir_path = os.path.join(dir_path, new_dir)
+        num = 0
+        while os.path.exists(new_dir_path):
+            new_dir_path = os.path.join(dir_path, new_dir+str(num).zfill(3))
+            num += 0
+        os.mkdir(new_dir_path)
+        return (new_dir_path,)
+
+
 NODE_CLASS_MAPPINGS = {
     "ImageOverlap-badger": ImageOverlap,
     "FloatToInt-badger": FloatToInt,
@@ -459,6 +513,8 @@ NODE_CLASS_MAPPINGS = {
     "TextListToString-badger": TextListToString,
     "getImageSide-badger": getImageSide,
     "VideoCut-badger": videoCut,
+    "getParentDir-badger": getParentDir,
+    "mkdir-badger": mkdir
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
