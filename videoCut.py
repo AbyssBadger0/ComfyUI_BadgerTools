@@ -60,7 +60,7 @@ def getCutList(images, min_frame, max_frame):
         img0 = images[i]
         img1 = images[i + 1]
         res = generateScore(img0, img1)
-        print("切割画面（" + str(i + 1) + "/" + str(len(images)) + ")" + str(res))
+        print("切割画面（" + str(i + 1) + "/" + str(len(images)-1) + ")" + str(res))
         resList.append(res)
         indexList.append(i)
         if num >= max_frame:
