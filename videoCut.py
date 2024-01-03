@@ -53,7 +53,7 @@ def getCutList(images, min_frame, max_frame):
     cutList = []
     resList = []
     indexList = []
-    i = 0
+    i = min_frame - 1
     num = 0
     while i < len(images) - 1:
         num += 1
