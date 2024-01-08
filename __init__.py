@@ -615,6 +615,83 @@ class SegmentToMaskByPoint:
         return (mask0, mask1, mask2,)
 
 
+class CropImageByMask:
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "mask": ("MASK",),
+            }
+        }
+
+    CATEGORY = "badger"
+
+    RETURN_TYPES = ("IMAGE", "INT", "INT",)
+    RETURN_NAMES = ("cropped_img", "X", "Y",)
+    FUNCTION = "crop_image_by_mask"
+
+    def crop_image_by_mask(self, image, mask):
+        # Ensure the mask is binary
+        mask = (mask > 0.5).float()
+
+        # Find the bounding box of the mask
+        if mask.sum() == 0:
+            raise ValueError("The mask is empty, cannot determine bounding box for cropping.")
+
+        # Find indices where the mask is nonzero
+        nonzero_indices = torch.nonzero(mask.squeeze(0), as_tuple=True)
+        topmost = torch.min(nonzero_indices[0])
+        leftmost = torch.min(nonzero_indices[1])
+        bottommost = torch.max(nonzero_indices[0])
+        rightmost = torch.max(nonzero_indices[1])
+
+        # Crop the image using the bounding box
+        cropped_image = image[:, topmost:bottommost + 1, leftmost:rightmost + 1]
+
+        # Return the cropped image and the top-left coordinates of the bounding box
+        X = int(leftmost)
+        Y = int(topmost)
+        return (cropped_image, X, Y,)
+
+
+class ApplyMaskToImage:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "mask": ("MASK",),
+            }
+        }
+
+    CATEGORY = "badger"
+
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("rgba_image",)
+    FUNCTION = "apply_mask_to_image"
+
+    def apply_mask_to_image(self, image, mask):
+        image = tensorToImg(image)
+        mask = tensorToImg(mask)
+        mask = mask.convert("L")
+
+        # 将图片转换为RGBA，以便添加透明度通道
+        image = image.convert("RGBA")
+
+        # 分离图片的通道
+        r, g, b, a = image.split()
+
+        # 将蒙版应用为alpha通道
+        new_a = Image.composite(a, Image.new('L', mask.size, 0), mask)
+
+        # 合并图像通道和新的alpha通道
+        result_image = Image.merge('RGBA', (r, g, b, new_a))
+        return (imgToTensor(result_image),)
+
+
+
 NODE_CLASS_MAPPINGS = {
     "ImageOverlap-badger": ImageOverlap,
     "FloatToInt-badger": FloatToInt,
@@ -630,6 +707,8 @@ NODE_CLASS_MAPPINGS = {
     "mkdir-badger": mkdir,
     "findCenterOfMask-badger": findCenterOfMask,
     "SegmentToMaskByPoint-badger": SegmentToMaskByPoint,
+    "CropImageByMask-badger": CropImageByMask,
+    "ApplyMaskToImage-badger": ApplyMaskToImage,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
