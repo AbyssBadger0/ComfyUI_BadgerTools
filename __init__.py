@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import comfy.utils
 from .videoCut import getCutList, saveToDir
-from .seg import get_mask
+from .seg import get_masks
 
 
 def getImageSize(IMAGE) -> tuple[int, int]:
@@ -44,6 +44,13 @@ def img_to_np(img):
 
 def np_to_img(numpy):
     return Image.fromarray(numpy.astype(np.uint8))
+
+
+def maskimg_to_mask(mask_img):
+    mask = np_to_img(mask_img)
+    mask = img_to_mask(mask)
+    mask = mask.unsqueeze(0)
+    return mask
 
 
 class ImageOverlap:
@@ -592,19 +599,20 @@ class SegmentToMaskByPoint:
 
     CATEGORY = "badger"
 
-    RETURN_TYPES = ("MASK",)
-    RETURN_NAMES = ("mask",)
+    RETURN_TYPES = ("MASK", "MASK", "MASK",)
+    RETURN_NAMES = ("mask0", "mask1", "mask2",)
     FUNCTION = "seg_to_mask_by_point"
 
     def seg_to_mask_by_point(self, img, X, Y, dilate, sam_ckpt):
         img = tensorToImg(img)
         img = img_to_np(img)
         latest_coords = [X, Y]
-        mask = get_mask(img, latest_coords, dilate, sam_ckpt)
-        mask = np_to_img(mask)
-        mask = img_to_mask(mask)
+        masks = get_masks(img, latest_coords, dilate, sam_ckpt)
+        mask0 = maskimg_to_mask(masks[0])
+        mask1 = maskimg_to_mask(masks[1])
+        mask2 = maskimg_to_mask(masks[2])
 
-        return (mask.unsqueeze(0),)
+        return (mask0, mask1, mask2,)
 
 
 NODE_CLASS_MAPPINGS = {

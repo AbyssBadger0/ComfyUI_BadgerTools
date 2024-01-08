@@ -32,7 +32,7 @@ def predict_masks_with_sam(
     return masks, scores, logits
 
 
-def get_mask(img, latest_coords, dilate_kernel_size, sam_ckpt):
+def get_masks(img, latest_coords, dilate_kernel_size, sam_ckpt):
     masks, _, _ = predict_masks_with_sam(
         img,
         [latest_coords],
@@ -42,4 +42,4 @@ def get_mask(img, latest_coords, dilate_kernel_size, sam_ckpt):
     masks = masks.astype(np.uint8) * 255
 
     masks = [dilate_mask(mask, dilate_kernel_size) for mask in masks]
-    return masks[1]
+    return masks
