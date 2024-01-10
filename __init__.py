@@ -691,6 +691,48 @@ class ApplyMaskToImage:
         return (imgToTensor(result_image),)
 
 
+class deleteDir:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "start": ("VHS_FILENAMES",),
+                "dir_path": ("STRING", {"default": ""}),
+            }
+        }
+
+    CATEGORY = "badger"
+    OUTPUT_NODE = True
+
+    RETURN_TYPES = ("INT", "STRING",)
+    RETURN_NAMES = ("result",)
+    FUNCTION = "delete_dir"
+
+    def delete_dir(self, start, dir_path):
+        e_info = ""
+        abs_dir_path = os.path.abspath(dir_path)
+        if not os.path.exists(abs_dir_path):
+            e_info = "路径不存在"
+            return (0, e_info,)
+        else:
+            try:
+                # 遍历文件夹中的每个文件或子文件夹
+                for root, dirs, files in os.walk(abs_dir_path):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        os.remove(file_path)  # 删除文件
+
+                    for folder in dirs:
+                        folder_path = os.path.join(root, folder)
+                        os.rmdir(folder_path)  # 删除空文件夹
+
+                os.rmdir(abs_dir_path)  # 最后删除根目录
+                e_info = "成功删除"
+                return (1, e_info,)
+            except Exception as e:
+                e_info = str(e)
+                return (0,e_info,)
+
 
 NODE_CLASS_MAPPINGS = {
     "ImageOverlap-badger": ImageOverlap,
@@ -709,6 +751,7 @@ NODE_CLASS_MAPPINGS = {
     "SegmentToMaskByPoint-badger": SegmentToMaskByPoint,
     "CropImageByMask-badger": CropImageByMask,
     "ApplyMaskToImage-badger": ApplyMaskToImage,
+    "deleteDir-badger": deleteDir,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
