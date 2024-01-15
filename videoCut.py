@@ -106,7 +106,6 @@ def videoToPng(videopath, rate, save_name):
 
 def cutToDir(root_dir, cutList):
     dirIndex = 0
-    cutIndex = 0
     pngList = os.listdir(root_dir)
     dirList = []
     dirPathString = ""
@@ -120,9 +119,7 @@ def cutToDir(root_dir, cutList):
         src = os.path.join(root_dir, png)
         tgtDir = os.path.join(root_dir, dirList[dirIndex])
         shutil.move(src, tgtDir)
-        if png == cutList[cutIndex]:
+        if png in cutList:
             dirIndex += 1
-            if cutIndex < len(cutList) - 1:
-                cutIndex += 1
 
     return dirPathString
