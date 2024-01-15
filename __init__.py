@@ -7,7 +7,7 @@ import torch
 import comfy.utils
 from .videoCut import getCutList, saveToDir
 from .seg import get_masks
-from .thick_lines_from_canny import fill_white_segments
+from .thick_lines_from_canny import fill_white_segments,find_largest_white_component
 
 
 def getImageSize(IMAGE) -> tuple[int, int]:
@@ -766,6 +766,7 @@ class FindThickLinesFromCanny:
     def find_thick_lines_from_canny(self, image, low_threshold, high_threshold):
         img = tensorToImg(image)
         result = fill_white_segments(img, low_threshold, high_threshold)
+        result = find_largest_white_component(result)
         result = result.convert("RGB")
         result_tensor = imgToTensor(result)
         return (result_tensor,)

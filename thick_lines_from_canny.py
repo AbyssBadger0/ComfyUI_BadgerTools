@@ -1,4 +1,5 @@
 from PIL import Image
+from collections import deque
 
 def draw_line(pixels, x0, y0, x1, y1):
     """Draw a white line from (x0, y0) to (x1, y1) on the provided pixels map."""
@@ -93,4 +94,36 @@ def fill_white_segments(original_image, low_threshold, high_threshold):
                         point_a = (x, y)
 
     # Save the new image with only the drawn lines
+    return new_image
+
+def find_largest_white_component(image):
+    width, height = image.size
+    visited = set()
+    largest_component = []
+    largest_size = 0
+
+    def bfs(x, y):
+        queue = deque([(x, y)])
+        local_visited = set()
+        while queue:
+            x, y = queue.popleft()
+            if (x, y) not in visited and 0 <= x < width and 0 <= y < height and image.getpixel((x, y)) == 255:
+                visited.add((x, y))
+                local_visited.add((x, y))
+                queue.extend([(x+1, y), (x-1, y), (x, y+1), (x, y-1)])
+        return local_visited
+
+    for y in range(height):
+        for x in range(width):
+            if image.getpixel((x, y)) == 255 and (x, y) not in visited:
+                component = bfs(x, y)
+                if len(component) > largest_size:
+                    largest_size = len(component)
+                    largest_component = component
+
+    # 创建一个新的图像来绘制最大的白色像素点整体
+    new_image = Image.new('1', image.size)
+    for x, y in largest_component:
+        new_image.putpixel((x, y), 255)
+
     return new_image
