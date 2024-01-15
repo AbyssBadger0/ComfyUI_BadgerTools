@@ -5,7 +5,7 @@ from PIL import Image
 import numpy as np
 import torch
 import comfy.utils
-from .videoCut import getCutList, videoToPng, cutToDir
+from .videoCut import getCutList, videoToPng, cutToDir, frames_to_video
 from .seg import get_masks
 from .thick_lines_from_canny import fill_white_segments, find_largest_white_component
 
@@ -448,14 +448,14 @@ class videoCut:
                 "video_path": ("STRING", {"default": "Temp"}),
                 "save_name": ("STRING", {"default": ""}),
                 "frame_rate": ("INT", {
-                    "default": 1,
+                    "default": 24,
                     "min": 1,
                     "max": 4096,
                     "step": 1,
                     "display": "number"
                 }),
                 "min_frame": ("INT", {
-                    "default": 1,
+                    "default": 16,
                     "min": 1,
                     "max": 4096,
                     "step": 1,
@@ -483,6 +483,42 @@ class videoCut:
         dirPathString = cutToDir(imagePath, cutList)
 
         return (dirPathString,)
+
+
+class frameToVideo:
+
+    def __init__(self) -> None:
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "frame_dir": ("STRING", {"default": ""}),
+                "save_name": ("STRING", {"default": "result.mp4"}),
+                "frame_rate": ("INT", {
+                    "default": 24,
+                    "min": 1,
+                    "max": 4096,
+                    "step": 1,
+                    "display": "number"
+                }),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "frame_to_video"
+
+    CATEGORY = "badger"
+
+    def frame_to_video(self, frame_dir, save_name, frame_rate):
+        output_abs = os.path.abspath(frame_dir)
+        output_dir = os.path.dirname(output_abs)
+        output_name = save_name
+        output_path = os.path.join(output_dir, output_name)
+        frames_to_video(frame_dir, frame_rate, output_path)
+
+        return (output_path,)
 
 
 class getParentDir:
@@ -912,6 +948,7 @@ NODE_CLASS_MAPPINGS = {
     "FindThickLinesFromCanny-badger": FindThickLinesFromCanny,
     "TrimTransparentEdges-badger": TrimTransparentEdges,
     "ExpandImageWithColor-badger": ExpandImageWithColor,
+    "frameToVideo-badger": frameToVideo,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {

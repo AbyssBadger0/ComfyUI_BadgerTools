@@ -104,6 +104,46 @@ def videoToPng(videopath, rate, save_name):
     return root_dir
 
 
+def frames_to_video(input_folder, frame_rate, output_path):
+    # Get a sorted list of (non-hidden) image files
+    files = [f for f in sorted(os.listdir(input_folder)) if not f.startswith('.')]
+    sorted_files = sorted(files, key=lambda x: os.path.splitext(x)[0])
+
+    # Create a temporary file listing all images for ffmpeg
+    temp_list_path = 'ffmpeg_temp_list.txt'
+    with open(temp_list_path, 'w') as filelist:
+        for filename in sorted_files[:-1]:
+            file_path = os.path.join(input_folder, filename)
+            filelist.write(f"file '{file_path}'\n")
+            filelist.write(f"duration {1 / frame_rate}\n")
+        # Write the last file without a duration
+        filelist.write(f"file '{os.path.join(input_folder, sorted_files[-1])}'\n")
+
+    # Construct the ffmpeg command to create the video
+    command = [
+        'ffmpeg',
+        '-f', 'concat',  # Use the concat demuxer
+        '-safe', '0',  # Allow unsafe file paths
+        '-i', temp_list_path,  # Input file list
+        '-vsync', 'vfr',  # Variable frame rate mode to match input sequence
+        '-pix_fmt', 'yuv420p',  # Pixel format, widely compatible
+        '-c:v', 'libx264',  # Codec to use for encoding
+        '-crf', '23',  # Constant Rate Factor, controls quality (lower is better)
+        output_path
+    ]
+
+    # Execute the command
+    try:
+        subprocess.run(command, check=True)
+        print(f'Video has been created at {output_path}')
+    except subprocess.CalledProcessError as e:
+        print(f'An error occurred: {e}')
+    finally:
+        # Clean up temporary file
+        if os.path.exists(temp_list_path):
+            os.remove(temp_list_path)
+
+
 def cutToDir(root_dir, cutList):
     dirIndex = 0
     pngList = os.listdir(root_dir)
