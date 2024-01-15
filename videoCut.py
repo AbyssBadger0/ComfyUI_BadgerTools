@@ -91,7 +91,13 @@ def videoToPng(videopath, rate, save_name):
     if os.path.exists(root_dir):
         shutil.rmtree(root_dir)
     os.mkdir(root_dir)
-    ffmpegCMD = "ffmpeg -i " + videopath + " -r " + str(rate) + " " + root_dir + "/%05d.png"
+    ffmpegCMD = [
+        'ffmpeg',
+        '-i', videopath,  # 输入视频路径
+        '-vf', f'fps={rate}',  # 设置帧率
+        '-q:v', '2',  # 设置输出质量
+        os.path.join(root_dir, 'frame_%05d.png')  # 输出文件名和格式
+    ]
     subprocess.run(ffmpegCMD)
     print("视频转图片完成")
 
