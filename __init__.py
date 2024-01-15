@@ -7,6 +7,7 @@ import torch
 import comfy.utils
 from .videoCut import getCutList, saveToDir
 from .seg import get_masks
+from .thick_lines_from_canny import fill_white_segments
 
 
 def getImageSize(IMAGE) -> tuple[int, int]:
@@ -731,7 +732,87 @@ class deleteDir:
                 return (1, e_info,)
             except Exception as e:
                 e_info = str(e)
-                return (0,e_info,)
+                return (0, e_info,)
+
+
+class FindThickLinesFromCanny:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "low_threshold": ("FLOAT", {
+                    "default": 0.01,
+                    "min": 0.0,
+                    "max": 1.0,
+                    "step": 0.001,
+                    "display": "number"
+                }),
+                "high_threshold": ("FLOAT", {
+                    "default": 0.02,
+                    "min": 0.0,
+                    "max": 1.0,
+                    "step": 0.001,
+                    "display": "number"
+                }),
+            }
+        }
+
+    CATEGORY = "badger"
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "find_thick_lines_from_canny"
+
+    def find_thick_lines_from_canny(self, image, low_threshold, high_threshold):
+        img = tensorToImg(image)
+        result = fill_white_segments(img, low_threshold, high_threshold)
+        result = result.convert("RGB")
+        result_tensor = imgToTensor(result)
+        return (result_tensor,)
+
+
+class TrimTransparentEdges:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+            }
+        }
+
+    CATEGORY = "badger"
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "trim_transparent_edges"
+
+    def trim_transparent_edges(self, image):
+
+        img = tensorToImg(image)
+        img = img.convert("RGBA")
+
+        # 获取图片数据
+        datas = img.getdata()
+
+        # 获取非透明像素的边界
+        non_transparent_pixels = [
+            (i % img.width, i // img.width)
+            for i, pix in enumerate(datas)
+            if pix[3] != 0
+        ]
+        if not non_transparent_pixels:
+            raise ValueError("Image is fully transparent")
+
+        # 获取非透明像素的最小和最大坐标
+        x_min = min(x for x, _ in non_transparent_pixels)
+        y_min = min(y for _, y in non_transparent_pixels)
+        x_max = max(x for x, _ in non_transparent_pixels)
+        y_max = max(y for _, y in non_transparent_pixels)
+
+        # 裁剪图片
+        cropped_img = img.crop((x_min, y_min, x_max + 1, y_max + 1))
+        cropped_img = imgToTensor(cropped_img)
+
+        return (cropped_img,)
 
 
 NODE_CLASS_MAPPINGS = {
@@ -752,6 +833,8 @@ NODE_CLASS_MAPPINGS = {
     "CropImageByMask-badger": CropImageByMask,
     "ApplyMaskToImage-badger": ApplyMaskToImage,
     "deleteDir-badger": deleteDir,
+    "FindThickLinesFromCanny-badger": FindThickLinesFromCanny,
+    "TrimTransparentEdges-badger": TrimTransparentEdges
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
