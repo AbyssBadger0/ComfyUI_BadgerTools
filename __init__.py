@@ -786,7 +786,6 @@ class TrimTransparentEdges:
     FUNCTION = "trim_transparent_edges"
 
     def trim_transparent_edges(self, image):
-
         img = tensorToImg(image)
         img = img.convert("RGBA")
 
@@ -815,6 +814,73 @@ class TrimTransparentEdges:
         return (cropped_img,)
 
 
+class ExpandImageWithColor:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "top": ("INT", {
+                    "default": 0,
+                    "min": 0,
+                    "max": 1024,
+                    "step": 1,
+                    "display": "number"
+                }),
+                "bottom": ("INT", {
+                    "default": 0,
+                    "min": 0,
+                    "max": 1024,
+                    "step": 1,
+                    "display": "number"
+                }),
+                "left": ("INT", {
+                    "default": 0,
+                    "min": 0,
+                    "max": 1024,
+                    "step": 1,
+                    "display": "number"
+                }),
+                "right": ("INT", {
+                    "default": 0,
+                    "min": 0,
+                    "max": 1024,
+                    "step": 1,
+                    "display": "number"
+                }),
+            },
+            "optional": {
+                "color": ("STRING", {"default": None}),
+            }
+        }
+
+    CATEGORY = "badger"
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "expand_image_with_color"
+
+    def expand_image_with_color(self,image, top, bottom, left, right, color=None):
+        img = tensorToImg(image)
+
+        # Determine the new size of the image
+        new_width = img.width + left + right
+        new_height = img.height + top + bottom
+
+        # Create a new image with the new size and the given background color
+        if color:
+            new_img = Image.new("RGBA", (new_width, new_height), color)
+        else:
+            # Use transparency if no color was provided
+            new_img = Image.new("RGBA", (new_width, new_height), (0, 0, 0, 0))
+
+        # Paste the original image onto the new image
+        new_img.paste(img, (left, top), img)
+
+        result = imgToTensor(new_img)
+
+        return (result,)
+
+
 NODE_CLASS_MAPPINGS = {
     "ImageOverlap-badger": ImageOverlap,
     "FloatToInt-badger": FloatToInt,
@@ -834,7 +900,8 @@ NODE_CLASS_MAPPINGS = {
     "ApplyMaskToImage-badger": ApplyMaskToImage,
     "deleteDir-badger": deleteDir,
     "FindThickLinesFromCanny-badger": FindThickLinesFromCanny,
-    "TrimTransparentEdges-badger": TrimTransparentEdges
+    "TrimTransparentEdges-badger": TrimTransparentEdges,
+    "ExpandImageWithColor-badger": ExpandImageWithColor,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
