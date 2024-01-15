@@ -5,9 +5,9 @@ from PIL import Image
 import numpy as np
 import torch
 import comfy.utils
-from .videoCut import getCutList, saveToDir
+from .videoCut import getCutList, videoToPng, cutToDir
 from .seg import get_masks
-from .thick_lines_from_canny import fill_white_segments,find_largest_white_component
+from .thick_lines_from_canny import fill_white_segments, find_largest_white_component
 
 
 def getImageSize(IMAGE) -> tuple[int, int]:
@@ -445,8 +445,15 @@ class videoCut:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "images": ("IMAGE",),
-                "save_name": ("STRING", {"default": "Temp"}),
+                "video_path": ("STRING", {"default": "Temp"}),
+                "save_name": ("STRING", {"default": ""}),
+                "frame_rate": ("INT", {
+                    "default": 1,
+                    "min": 1,
+                    "max": 4096,
+                    "step": 1,
+                    "display": "number"
+                }),
                 "min_frame": ("INT", {
                     "default": 1,
                     "min": 1,
@@ -469,11 +476,13 @@ class videoCut:
 
     CATEGORY = "badger"
 
-    def videoCut(self, images, save_name, min_frame, max_frame):
-        cut_list = getCutList(images, min_frame, max_frame)
-        save_path = saveToDir(images, cut_list, save_name)
+    def videoCut(self, video_path, save_name, frame_rate, min_frame, max_frame):
+        videoPath = os.path.abspath(video_path)
+        imagePath = videoToPng(videoPath, frame_rate, save_name)
+        cutList = getCutList(imagePath, min_frame, max_frame)
+        dirPathString = cutToDir(imagePath, cutList)
 
-        return (save_path,)
+        return (dirPathString,)
 
 
 class getParentDir:
@@ -860,7 +869,7 @@ class ExpandImageWithColor:
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "expand_image_with_color"
 
-    def expand_image_with_color(self,image, top, bottom, left, right, color=None):
+    def expand_image_with_color(self, image, top, bottom, left, right, color=None):
         img = tensorToImg(image)
 
         # Determine the new size of the image
