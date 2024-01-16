@@ -20,3 +20,4 @@ webdataset
 packaging
 wldhx.yadisk-direct
 timm
+moviepy
