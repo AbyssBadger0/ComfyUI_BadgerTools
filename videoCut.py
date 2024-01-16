@@ -1,81 +1,70 @@
 import os
 import subprocess
 import shutil
-import torch
-import open_clip
 import cv2
-from sentence_transformers import util
-from PIL import Image
-import sys
-from skimage import metrics
-
-device = "cuda" if torch.cuda.is_available() else "cpu"
-model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-16-plus-240', pretrained="laion400m_e32")
-model.to(device)
+import skimage
 
 
-def SSIM(imgPath0, imgPath1):
-    image1 = cv2.imread(imgPath0)
-    image2 = cv2.imread(imgPath1)
-    image2 = cv2.resize(image2, (image1.shape[1], image1.shape[0]), interpolation=cv2.INTER_AREA)
-    # Convert images to grayscale
-    image1_gray = cv2.cvtColor(image1, cv2.COLOR_BGR2GRAY)
-    image2_gray = cv2.cvtColor(image2, cv2.COLOR_BGR2GRAY)
-    # Calculate SSIM
-    ssim_score = metrics.structural_similarity(image1_gray, image2_gray, full=True)
-    return round(ssim_score[0], 2) * 100
+def calculate_image_similarity(img_path1, img_path2):
+    # 读取图片
+    img1 = cv2.imread(img_path1, cv2.IMREAD_GRAYSCALE)
+    img2 = cv2.imread(img_path2, cv2.IMREAD_GRAYSCALE)
+
+    # 检查图片是否有效
+    if img1 is None or img2 is None:
+        raise ValueError("One of the images couldn't be loaded.")
+
+    # 缩放图片到相同大小
+    img2 = cv2.resize(img2, (img1.shape[1], img1.shape[0]))
+
+    # 方法1: 直方图比较
+    hist1 = cv2.calcHist([img1], [0], None, [256], [0, 256])
+    hist2 = cv2.calcHist([img2], [0], None, [256], [0, 256])
+    hist_similarity = cv2.compareHist(hist1, hist2, cv2.HISTCMP_CORREL)
+
+    # 方法2: 结构相似性指数 (SSIM)
+    ssim_similarity = skimage.metrics.structural_similarity(img1, img2)
+
+    # 方法3: 特征点匹配 (使用ORB)
+    orb = cv2.ORB_create()
+    kp1, des1 = orb.detectAndCompute(img1, None)
+    kp2, des2 = orb.detectAndCompute(img2, None)
+    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+    matches = bf.match(des1, des2)
+    feature_similarity = len(matches) / float(min(len(des1), len(des2)))
+
+    # 综合评分
+    combined_score = (hist_similarity + ssim_similarity + feature_similarity) / 3.0
+
+    return combined_score
 
 
-def imageEncoder(img):
-    img1 = Image.fromarray(img).convert('RGB')
-    img1 = preprocess(img1).unsqueeze(0).to(device)
-    img1 = model.encode_image(img1)
-    return img1
-
-
-def generateScore(image1, image2):
-    test_img = cv2.imread(image1, cv2.IMREAD_UNCHANGED)
-    data_img = cv2.imread(image2, cv2.IMREAD_UNCHANGED)
-    img1 = imageEncoder(test_img)
-    img2 = imageEncoder(data_img)
-    cos_scores = util.pytorch_cos_sim(img1, img2)
-    score = round(float(cos_scores[0][0]) * 100, 2)
-    return score
-
-
-def getCutList(imagePath, min_frame, max_frame):
+def getCutList(imagePath, threshold, min_frame, max_frame):
     pngList = os.listdir(imagePath)
     cutList = []
-    resList = []
     indexList = []
-    i = min_frame-1
+    resList = []
+    i = min_frame - 1
     num = 0
     while i < len(pngList) - 1:
         num += 1
         imgPath0 = os.path.join(imagePath, pngList[i])
         imgPath1 = os.path.join(imagePath, pngList[i + 1])
-        res = generateScore(imgPath0, imgPath1)
-        print("切割画面（" + str(i + 1) + "/" + str(len(pngList) - 1) + ")  相似度：" + str(res) + "%")
-        resList.append(res)
+        similarity = calculate_image_similarity(imgPath0, imgPath1)
+        print("切割画面（" + str(i + 1) + "/" + str(len(pngList) - 1))
         indexList.append(i)
+        resList.append(similarity)
         if num >= max_frame:
             num = 0
             cutList.append(pngList[i])
             i += min_frame
-        elif res < 95:
-            res2 = SSIM(imgPath0, imgPath1)
-            if res2 < 60:
-                res3 = (95 - res) ** 2 + (60 - res2) ** 2
-                if (res3 > 150):
-                    num = 0
-                    cutList.append(pngList[i])
-                    i += min_frame
-                else:
-                    i += 1
-            else:
-                i += 1
+        elif similarity < threshold:
+            num = 0
+            cutList.append(pngList[i])
+            i += min_frame
         else:
             i += 1
+    print(resList)
     return cutList
 
 
