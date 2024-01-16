@@ -57,19 +57,21 @@ def getCutList(imagePath, threshold, min_frame, max_frame):
         i += 1
 
     i = min_frame - 1
-    threshold = (sum(resList) / len(resList)) * threshold
+    avg = sum(resList) / len(resList)
+    threshold = avg * threshold
     while i < len(pngList) - 1:
         if num >= max_frame:
             num = 0
             cutList.append(pngList[i])
             i += min_frame
-        elif similarity < threshold:
+        elif resList[i] < threshold:
             num = 0
             cutList.append(pngList[i])
             i += min_frame
         else:
             i += 1
-    print(resList)
+    print("平均计算阈值："+str(avg)+"   处理阈值："+str(threshold))
+    print(cutList)
     return cutList
 
 

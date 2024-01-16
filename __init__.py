@@ -480,7 +480,7 @@ class VideoCutFromDir:
             "required": {
                 "frame_dir": ("STRING", {"default": None}),
                 "threshold": ("FLOAT", {
-                    "default": 0.5,
+                    "default": 0.7,
                     "min": 0.01,
                     "max": 1.0,
                     "step": 0.01,
