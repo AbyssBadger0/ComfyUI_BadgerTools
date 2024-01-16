@@ -436,7 +436,7 @@ class getImageSide:
         return (side,)
 
 
-class videoCut:
+class VideoToFrame:
 
     def __init__(self) -> None:
         pass
@@ -445,8 +445,8 @@ class videoCut:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "video_path": ("STRING", {"default": "Temp"}),
-                "save_name": ("STRING", {"default": ""}),
+                "video_path": ("STRING", {"default": None}),
+                "save_name": ("STRING", {"default": "temp"}),
                 "frame_rate": ("INT", {
                     "default": 24,
                     "min": 1,
@@ -454,6 +454,31 @@ class videoCut:
                     "step": 1,
                     "display": "number"
                 }),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "video_to_frame"
+
+    CATEGORY = "badger"
+
+    def video_to_frame(self, video_path, save_name, frame_rate):
+        videoPath = os.path.abspath(video_path)
+        imagePath = videoToPng(videoPath, frame_rate, save_name)
+
+        return (imagePath,)
+
+
+class VideoCutFromDir:
+
+    def __init__(self) -> None:
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "frame_dir": ("STRING", {"default": None}),
                 "min_frame": ("INT", {
                     "default": 16,
                     "min": 1,
@@ -472,20 +497,18 @@ class videoCut:
         }
 
     RETURN_TYPES = ("STRING",)
-    FUNCTION = "videoCut"
+    FUNCTION = "video_cut_from_dir"
 
     CATEGORY = "badger"
 
-    def videoCut(self, video_path, save_name, frame_rate, min_frame, max_frame):
-        videoPath = os.path.abspath(video_path)
-        imagePath = videoToPng(videoPath, frame_rate, save_name)
-        cutList = getCutList(imagePath, min_frame, max_frame)
-        dirPathString = cutToDir(imagePath, cutList)
+    def video_cut_from_dir(self, frame_dir, min_frame, max_frame):
+        cutList = getCutList(frame_dir, min_frame, max_frame)
+        dirPathString = cutToDir(frame_dir, cutList)
 
         return (dirPathString,)
 
 
-class frameToVideo:
+class FrameToVideo:
 
     def __init__(self) -> None:
         pass
@@ -937,7 +960,9 @@ NODE_CLASS_MAPPINGS = {
     "StringToFizz-badger": StringToFizz,
     "TextListToString-badger": TextListToString,
     "getImageSide-badger": getImageSide,
-    "VideoCut-badger": videoCut,
+    "VideoCutFromDir-badger": VideoCutFromDir,
+    "FrameToVideo-badger": FrameToVideo,
+    "VideoToFrame-badger": VideoToFrame,
     "getParentDir-badger": getParentDir,
     "mkdir-badger": mkdir,
     "findCenterOfMask-badger": findCenterOfMask,
@@ -948,7 +973,7 @@ NODE_CLASS_MAPPINGS = {
     "FindThickLinesFromCanny-badger": FindThickLinesFromCanny,
     "TrimTransparentEdges-badger": TrimTransparentEdges,
     "ExpandImageWithColor-badger": ExpandImageWithColor,
-    "frameToVideo-badger": frameToVideo,
+
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
