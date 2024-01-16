@@ -973,6 +973,25 @@ class GetUUID:
         return (result,)
 
 
+class GetDirName:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "dir_path": ("STRING", {"default": ""}),
+            },
+        }
+
+    CATEGORY = "badger"
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "get_dir_name"
+
+    def get_dir_name(self, dir_path):
+        folder_name = os.path.basename(os.path.dirname(dir_path))
+        return (folder_name,)
+
+
 NODE_CLASS_MAPPINGS = {
     "ImageOverlap-badger": ImageOverlap,
     "FloatToInt-badger": FloatToInt,
@@ -996,7 +1015,8 @@ NODE_CLASS_MAPPINGS = {
     "FindThickLinesFromCanny-badger": FindThickLinesFromCanny,
     "TrimTransparentEdges-badger": TrimTransparentEdges,
     "ExpandImageWithColor-badger": ExpandImageWithColor,
-    "GetUUID-badger": GetUUID
+    "GetUUID-badger": GetUUID,
+    "GetDirName-badger": GetDirName,
 
 }
 
