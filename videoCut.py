@@ -160,7 +160,7 @@ def frames_to_video(input_folder, frame_rate, output_path):
 
 def cutToDir(root_dir, cutList):
     dirIndex = 0
-    pngList = os.listdir(root_dir)
+    pngList = sorted(os.listdir(root_dir))
     dirList = []
     dirPathString = ""
     for i in range(len(cutList) + 1):
