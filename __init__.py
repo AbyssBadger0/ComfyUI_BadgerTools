@@ -525,7 +525,7 @@ class FrameToVideo:
         return {
             "required": {
                 "frame_dir": ("STRING", {"default": ""}),
-                "save_name": ("STRING", {"default": "result.mp4"}),
+                "save_path": ("STRING", {"default": "result.mp4"}),
                 "frame_rate": ("INT", {
                     "default": 24,
                     "min": 1,
@@ -541,14 +541,9 @@ class FrameToVideo:
 
     CATEGORY = "badger"
 
-    def frame_to_video(self, frame_dir, save_name, frame_rate):
-        output_abs = os.path.abspath(frame_dir)
-        output_dir = os.path.dirname(output_abs)
-        output_name = save_name
-        output_path = os.path.join(output_dir, output_name)
-        frames_to_video(frame_dir, frame_rate, output_path)
-
-        return (output_path,)
+    def frame_to_video(self, frame_dir, save_path, frame_rate):
+        frames_to_video(frame_dir, frame_rate, save_path)
+        return (save_path,)
 
 
 class getParentDir:
