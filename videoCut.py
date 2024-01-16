@@ -32,7 +32,6 @@ def calculate_image_similarity(img_path1, img_path2):
     bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
     matches = bf.match(des1, des2)
     feature_similarity = len(matches) / float(min(len(des1), len(des2)))
-
     # 综合评分
     combined_score = (hist_similarity + ssim_similarity + feature_similarity) / 3.0
 
@@ -59,7 +58,7 @@ def getCutList(imagePath, threshold, min_frame, max_frame):
     i = min_frame - 1
     avg = sum(resList) / len(resList)
     threshold = avg * threshold
-    while i < len(pngList) - 1:
+    while i < len(resList) - 1:
         if num >= max_frame:
             num = 0
             cutList.append(pngList[i])
