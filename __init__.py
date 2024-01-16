@@ -5,7 +5,7 @@ from PIL import Image
 import numpy as np
 import torch
 import comfy.utils
-from .videoCut import getCutList, videoToPng, cutToDir, frames_to_video
+from .videoCut import getCutList, video_to_frames, cutToDir, frames_to_video
 from .seg import get_masks
 from .thick_lines_from_canny import fill_white_segments, find_largest_white_component
 
@@ -447,6 +447,13 @@ class VideoToFrame:
             "required": {
                 "video_path": ("STRING", {"default": None}),
                 "save_name": ("STRING", {"default": "temp"}),
+                "min_side_length": ("INT", {
+                    "default": 512,
+                    "min": 1,
+                    "max": 4096,
+                    "step": 1,
+                    "display": "number"
+                }),
                 "frame_rate": ("INT", {
                     "default": 24,
                     "min": 1,
@@ -462,9 +469,9 @@ class VideoToFrame:
 
     CATEGORY = "badger"
 
-    def video_to_frame(self, video_path, save_name, frame_rate):
+    def video_to_frame(self, video_path, save_name,min_side_length, frame_rate):
         videoPath = os.path.abspath(video_path)
-        imagePath = videoToPng(videoPath, frame_rate, save_name)
+        imagePath = video_to_frames(videoPath,min_side_length, frame_rate, save_name)
 
         return (imagePath,)
 
@@ -760,12 +767,12 @@ class ApplyMaskToImage:
         return (imgToTensor(result_image),)
 
 
-class deleteDir:
+class DeleteDir:
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
-                "start": ("VHS_FILENAMES",),
+                "start": ("STRING", {"default": None}),
                 "dir_path": ("STRING", {"default": ""}),
             }
         }
@@ -969,7 +976,7 @@ NODE_CLASS_MAPPINGS = {
     "SegmentToMaskByPoint-badger": SegmentToMaskByPoint,
     "CropImageByMask-badger": CropImageByMask,
     "ApplyMaskToImage-badger": ApplyMaskToImage,
-    "deleteDir-badger": deleteDir,
+    "deleteDir-badger": DeleteDir,
     "FindThickLinesFromCanny-badger": FindThickLinesFromCanny,
     "TrimTransparentEdges-badger": TrimTransparentEdges,
     "ExpandImageWithColor-badger": ExpandImageWithColor,
