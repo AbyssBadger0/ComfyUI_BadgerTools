@@ -542,6 +542,7 @@ class FrameToVideo:
     CATEGORY = "badger"
 
     def frame_to_video(self, frame_dir, save_path, frame_rate):
+        save_path = os.path.abspath(save_path)
         frames_to_video(frame_dir, frame_rate, save_path)
         return (save_path,)
 
