@@ -1,6 +1,6 @@
 import math
 import os
-
+import uuid
 from PIL import Image
 import numpy as np
 import torch
@@ -469,9 +469,9 @@ class VideoToFrame:
 
     CATEGORY = "badger"
 
-    def video_to_frame(self, video_path, save_name,min_side_length, frame_rate):
+    def video_to_frame(self, video_path, save_name, min_side_length, frame_rate):
         videoPath = os.path.abspath(video_path)
-        imagePath = video_to_frames(videoPath,min_side_length, frame_rate, save_name)
+        imagePath = video_to_frames(videoPath, min_side_length, frame_rate, save_name)
 
         return (imagePath,)
 
@@ -508,7 +508,7 @@ class VideoCutFromDir:
 
     CATEGORY = "badger"
 
-    def video_cut_from_dir(self, frame_dir,min_frame, max_frame):
+    def video_cut_from_dir(self, frame_dir, min_frame, max_frame):
         cutList = getCutList(frame_dir, min_frame, max_frame)
         dirPathString = cutToDir(frame_dir, cutList)
 
@@ -953,6 +953,26 @@ class ExpandImageWithColor:
         return (result,)
 
 
+class GetUUID:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "append": ("STRING", {"default": ""}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
+            },
+        }
+
+    CATEGORY = "badger"
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "get_uuid"
+
+    def get_uuid(self, append, seed):
+        result = uuid.uuid4().hex + append
+        return (result,)
+
+
 NODE_CLASS_MAPPINGS = {
     "ImageOverlap-badger": ImageOverlap,
     "FloatToInt-badger": FloatToInt,
@@ -976,6 +996,7 @@ NODE_CLASS_MAPPINGS = {
     "FindThickLinesFromCanny-badger": FindThickLinesFromCanny,
     "TrimTransparentEdges-badger": TrimTransparentEdges,
     "ExpandImageWithColor-badger": ExpandImageWithColor,
+    "GetUUID-badger": GetUUID
 
 }
 
