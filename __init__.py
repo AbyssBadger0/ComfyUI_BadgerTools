@@ -988,7 +988,7 @@ class GetDirName:
     FUNCTION = "get_dir_name"
 
     def get_dir_name(self, dir_path):
-        folder_name = os.path.basename(os.path.dirname(dir_path))
+        folder_name = os.path.basename(dir_path)
         return (folder_name,)
 
 
