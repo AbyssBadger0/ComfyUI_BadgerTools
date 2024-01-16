@@ -39,7 +39,7 @@ def calculate_image_similarity(img_path1, img_path2):
     return combined_score
 
 
-def getCutList(imagePath, min_frame, max_frame):
+def getCutList(imagePath, threshold, min_frame, max_frame):
     pngList = os.listdir(imagePath)
     cutList = []
     indexList = []
@@ -51,13 +51,13 @@ def getCutList(imagePath, min_frame, max_frame):
         imgPath0 = os.path.join(imagePath, pngList[i])
         imgPath1 = os.path.join(imagePath, pngList[i + 1])
         similarity = calculate_image_similarity(imgPath0, imgPath1)
-        print("切割画面(" + str(i + 1) + "/" + str(len(pngList) - 1) +") 相似度:"+ str(similarity))
+        print("切割画面(" + str(i + 1) + "/" + str(len(pngList) - 1) + ") 相似度:" + str(similarity))
         indexList.append(i)
         resList.append(similarity)
         i += 1
 
     i = min_frame - 1
-    threshold = sum(resList)/len(resList)
+    threshold = (sum(resList) / len(resList)) * threshold
     while i < len(pngList) - 1:
         if num >= max_frame:
             num = 0
