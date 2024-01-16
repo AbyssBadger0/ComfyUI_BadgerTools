@@ -479,13 +479,6 @@ class VideoCutFromDir:
         return {
             "required": {
                 "frame_dir": ("STRING", {"default": None}),
-                "threshold": ("FLOAT", {
-                    "default": 0.7,
-                    "min": 0.01,
-                    "max": 1.0,
-                    "step": 0.01,
-                    "display": "number"
-                }),
                 "min_frame": ("INT", {
                     "default": 16,
                     "min": 1,
@@ -508,8 +501,8 @@ class VideoCutFromDir:
 
     CATEGORY = "badger"
 
-    def video_cut_from_dir(self, frame_dir,threshold, min_frame, max_frame):
-        cutList = getCutList(frame_dir,threshold, min_frame, max_frame)
+    def video_cut_from_dir(self, frame_dir,min_frame, max_frame):
+        cutList = getCutList(frame_dir, min_frame, max_frame)
         dirPathString = cutToDir(frame_dir, cutList)
 
         return (dirPathString,)
