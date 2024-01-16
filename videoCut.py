@@ -49,7 +49,7 @@ def getCutList(imagepath, min_frame, max_frame):
     resList = []
     indexList = []
     i = min_frame - 1
-    num = 0
+    num = min_frame - 1
     while i < len(pngList) - 1:
         num += 1
         imgPath0 = os.path.join(imagepath, pngList[i])
@@ -59,7 +59,7 @@ def getCutList(imagepath, min_frame, max_frame):
         resList.append(res)
         indexList.append(i)
         if num >= max_frame:
-            num = 0
+            num = min_frame - 1
             cutList.append(pngList[i])
             i += min_frame
         elif res < 95:
@@ -68,7 +68,7 @@ def getCutList(imagepath, min_frame, max_frame):
                 res3 = (95 - res) ** 2 + (60 - res2) ** 2
                 print(res3)
                 if (res3 > 150):
-                    num = 0
+                    num = min_frame - 1
                     cutList.append(pngList[i])
                     i += min_frame
                 else:
