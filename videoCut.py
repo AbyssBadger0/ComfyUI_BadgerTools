@@ -48,7 +48,7 @@ def getCutList(imagePath, min_frame, max_frame):
     cutList = []
     resList = []
     indexList = []
-    i = 0
+    i = min_frame-1
     num = 0
     while i < len(pngList) - 1:
         num += 1
