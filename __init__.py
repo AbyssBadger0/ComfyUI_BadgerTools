@@ -8,6 +8,7 @@ import comfy.utils
 from .videoCut import getCutList, video_to_frames, cutToDir, frames_to_video
 from .seg import get_masks
 from .thick_lines_from_canny import fill_white_segments, find_largest_white_component
+from .remove_line import find_most_frequent_color, find_similar_colors
 
 
 def getImageSize(IMAGE) -> tuple[int, int]:
@@ -598,6 +599,8 @@ class mkdir:
 
 
 class findCenterOfMask:
+    def __init__(self) -> None:
+        pass
 
     @classmethod
     def INPUT_TYPES(s):
@@ -639,6 +642,9 @@ class findCenterOfMask:
 
 
 class SegmentToMaskByPoint:
+    def __init__(self) -> None:
+        pass
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -688,6 +694,8 @@ class SegmentToMaskByPoint:
 
 
 class CropImageByMask:
+    def __init__(self) -> None:
+        pass
 
     @classmethod
     def INPUT_TYPES(s):
@@ -729,6 +737,9 @@ class CropImageByMask:
 
 
 class ApplyMaskToImage:
+    def __init__(self) -> None:
+        pass
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -764,6 +775,9 @@ class ApplyMaskToImage:
 
 
 class DeleteDir:
+    def __init__(self) -> None:
+        pass
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -807,6 +821,9 @@ class DeleteDir:
 
 
 class FindThickLinesFromCanny:
+    def __init__(self) -> None:
+        pass
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -844,6 +861,9 @@ class FindThickLinesFromCanny:
 
 
 class TrimTransparentEdges:
+    def __init__(self) -> None:
+        pass
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -887,6 +907,9 @@ class TrimTransparentEdges:
 
 
 class ExpandImageWithColor:
+    def __init__(self) -> None:
+        pass
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -954,6 +977,9 @@ class ExpandImageWithColor:
 
 
 class GetUUID:
+    def __init__(self) -> None:
+        pass
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -974,6 +1000,9 @@ class GetUUID:
 
 
 class GetDirName:
+    def __init__(self) -> None:
+        pass
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -990,6 +1019,47 @@ class GetDirName:
     def get_dir_name(self, dir_path):
         folder_name = os.path.basename(dir_path)
         return (folder_name,)
+
+
+class IdentifyLinesBasedOnBorderColor:
+    def __init__(self) -> None:
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "no_bg_image": ("IMAGE",),
+                "detection_width": ("INT", {
+                    "default": 1,
+                    "min": 1,
+                    "max": 4096,
+                    "step": 1,
+                    "display": "number"
+                }),
+                "color_threshold": ("INT", {
+                    "default": 5,
+                    "min": 1,
+                    "max": 1024,
+                    "step": 1,
+                    "display": "number"
+                }),
+            },
+        }
+
+    CATEGORY = "badger"
+
+    RETURN_TYPES = ("IMAGE", "MASK")
+    FUNCTION = "identify_lines_based_on_borderColor"
+
+    def identify_lines_based_on_borderColor(self, no_bg_image, detection_width, color_threshold):
+        img = tensorToImg(no_bg_image)
+        color_string = find_most_frequent_color(img, detection_width)
+        line_mask_img = find_similar_colors(img, color_string, color_threshold)
+        msk_img = imgToTensor(line_mask_img)
+        mask = img_to_mask(line_mask_img)
+        mask = mask.unsqueeze(0)
+        return (msk_img, mask,)
 
 
 NODE_CLASS_MAPPINGS = {
@@ -1017,6 +1087,7 @@ NODE_CLASS_MAPPINGS = {
     "ExpandImageWithColor-badger": ExpandImageWithColor,
     "GetUUID-badger": GetUUID,
     "GetDirName-badger": GetDirName,
+    "IdentifyLinesBasedOnBorderColor-badger": IdentifyLinesBasedOnBorderColor,
 
 }
 
