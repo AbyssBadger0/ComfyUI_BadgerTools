@@ -1,11 +1,19 @@
+from collections import defaultdict
+import numpy as np
 from PIL import Image
 
 
-def find_most_frequent_color(PIL_img, n):
-    img = PIL_img.convert('RGBA')  # 确保图片是RGBA模式
+def rgb_to_hex(rgb_colr):
+    return '{:02x}{:02x}{:02x}'.format(*rgb_colr)
 
-    # 初始化颜色统计字典
-    color_count = {}
+
+def hex_to_rgb(hex_color):
+    return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def get_colors(PIL_img, n):
+    color_list = []
+    img = PIL_img.convert('RGBA')  # 确保图片是RGBA模式
 
     # 获取图片尺寸
     width, height = img.size
@@ -15,30 +23,65 @@ def find_most_frequent_color(PIL_img, n):
         # 从左到右扫描
         for x in range(width):
             r, g, b, a = img.getpixel((x, y))
-            if a == 255:
+            if a != 0:
                 count += 1
                 if count <= n:
                     color = (r, g, b)
-                    color_count[color] = color_count.get(color, 0) + 1
+                    color_list.append(rgb_to_hex(color))
             else:
                 count = 0
         count = 0
         # 从右到左扫描
         for x in range(width - 1, -1, -1):
             r, g, b, a = img.getpixel((x, y))
-            if a == 255:
+            if a != 0:
                 count += 1
                 if count <= n:
                     color = (r, g, b)
-                    color_count[color] = color_count.get(color, 0) + 1
+                    color_list.append(rgb_to_hex(color))
             else:
                 count = 0
 
-    # 找到出现次数最多的颜色
-    most_frequent_color = max(color_count, key=color_count.get)
 
-    # 返回像素点最多的颜色对应的字符串（格式化为十六进制）
-    return '#{:02x}{:02x}{:02x}'.format(*most_frequent_color)
+    return color_list
+
+
+def color_distance(c1, c2):
+    (r1, g1, b1) = c1
+    (r2, g2, b2) = c2
+    return np.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2)
+
+
+def average_color(colors):
+    r = int(np.mean([c[0] for c in colors]))
+    g = int(np.mean([c[1] for c in colors]))
+    b = int(np.mean([c[2] for c in colors]))
+    return f"{r:02x}{g:02x}{b:02x}"
+
+
+def fuzzy_color_grouping(colors, threshold):
+    groups = defaultdict(list)
+
+    for color in colors:
+        rgb = hex_to_rgb(color)
+        placed = False
+
+        for group_color in groups:
+            if color_distance(rgb, hex_to_rgb(group_color)) < threshold:
+                groups[group_color].append(rgb)
+                placed = True
+                break
+
+        if not placed:
+            groups[color].append(rgb)
+
+    return groups
+
+
+def most_common_fuzzy_color(colors, threshold):
+    groups = fuzzy_color_grouping(colors, threshold)
+    largest_group = max(groups, key=lambda k: len(groups[k]))
+    return average_color(groups[largest_group])
 
 
 def is_color_similar(color1, color2, threshold):
@@ -46,7 +89,6 @@ def is_color_similar(color1, color2, threshold):
 
 
 def find_similar_colors(image, color_string, threshold):
-    color_string = color_string[1:]
     # 转换颜色字符串为RGB元组
     target_color = tuple(int(color_string[i:i + 2], 16) for i in (0, 2, 4))
 
@@ -63,3 +105,4 @@ def find_similar_colors(image, color_string, threshold):
                 output_pixels[x, y] = (255, 255, 255)
 
     return output_image
+
