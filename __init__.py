@@ -39,6 +39,7 @@ def img_to_mask(mask):
     mask = mask.convert("RGBA")
     mask = np.array(mask.getchannel('R')).astype(np.float32) / 255.0
     mask = torch.from_numpy(mask)
+    mask = mask.unsqueeze(0)
     return mask
 
 
@@ -56,7 +57,6 @@ def np_to_img(numpy):
 def maskimg_to_mask(mask_img):
     mask = np_to_img(mask_img)
     mask = img_to_mask(mask)
-    mask = mask.unsqueeze(0)
     return mask
 
 
@@ -65,6 +65,7 @@ def garbage_collect():
         torch.cuda.empty_cache()
         torch.cuda.ipc_collect()
     gc.collect()
+
 
 class ImageOverlap:
 
@@ -1040,7 +1041,7 @@ class GetDirName:
         return (folder_name,)
 
 
-class IdentifyLinesBasedOnBorderColor:
+class GetColorFromBorder:
     def __init__(self) -> None:
         pass
 
@@ -1048,14 +1049,7 @@ class IdentifyLinesBasedOnBorderColor:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "no_bg_image": ("IMAGE",),
-                "classification_threshold": ("INT", {
-                    "default": 1,
-                    "min": 1,
-                    "max": 4096,
-                    "step": 1,
-                    "display": "number"
-                }),
+                "image": ("IMAGE",),
                 "detection_width": ("INT", {
                     "default": 1,
                     "min": 1,
@@ -1063,10 +1057,10 @@ class IdentifyLinesBasedOnBorderColor:
                     "step": 1,
                     "display": "number"
                 }),
-                "color_threshold": ("INT", {
-                    "default": 5,
+                "classification_threshold": ("INT", {
+                    "default": 10,
                     "min": 1,
-                    "max": 1024,
+                    "max": 4096,
                     "step": 1,
                     "display": "number"
                 }),
@@ -1075,20 +1069,83 @@ class IdentifyLinesBasedOnBorderColor:
 
     CATEGORY = "badger"
 
-    RETURN_TYPES = ("IMAGE", "MASK")
-    FUNCTION = "identify_lines_based_on_borderColor"
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "get_color_from_border"
 
-    def identify_lines_based_on_borderColor(self, no_bg_image, classification_threshold, detection_width,
-                                            color_threshold):
-        img = tensorToImg(no_bg_image)
-        colors = get_colors(img, detection_width)
-        color_string = most_common_fuzzy_color(colors, classification_threshold)
-        line_mask_img = find_similar_colors(img, color_string, color_threshold)
-        msk_img = imgToTensor(line_mask_img)
-        mask = img_to_mask(line_mask_img)
-        mask = mask.unsqueeze(0)
+    def get_color_from_border(self, image, detection_width, classification_threshold):
+        pil_img = tensorToImg(image)
+        colors = get_colors(pil_img, detection_width)
+        color = most_common_fuzzy_color(colors, classification_threshold)
         garbage_collect()
-        return (msk_img, mask,)
+        return (color,)
+
+
+class IdentifyColorToMask:
+    def __init__(self) -> None:
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "color": ("STRING", {"default": "#ffffff"}),
+                "detection_threshold": ("INT", {
+                    "default": 5,
+                    "min": 1,
+                    "max": 4096,
+                    "step": 1,
+                    "display": "number"
+                }),
+            },
+        }
+
+    CATEGORY = "badger"
+
+    RETURN_TYPES = ("IMAGE", "MASK",)
+    FUNCTION = "identify_color_to_mask"
+
+    def identify_color_to_mask(self, image, color, detection_threshold):
+        pil_img = tensorToImg(image)
+        mask_img = find_similar_colors(pil_img, color, detection_threshold)
+        mask_tensor = imgToTensor(mask_img)
+        mask = img_to_mask(mask_img)
+        garbage_collect()
+        return (mask_tensor, mask,)
+
+
+class IdentifyBorderColorToMask:
+    def __init__(self) -> None:
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "color": ("STRING", {"default": "#ffffff"}),
+                "detection_threshold": ("INT", {
+                    "default": 5,
+                    "min": 1,
+                    "max": 4096,
+                    "step": 1,
+                    "display": "number"
+                }),
+            },
+        }
+
+    CATEGORY = "badger"
+
+    RETURN_TYPES = ("IMAGE", "MASK",)
+    FUNCTION = "identify_border_color_to_mask"
+
+    def identify_border_color_to_mask(self, image, color, detection_threshold):
+        pil_img = tensorToImg(image)
+        mask_img = detect_outline(pil_img, color, detection_threshold)
+        mask_tensor = imgToTensor(mask_img)
+        mask = img_to_mask(mask_img)
+        garbage_collect()
+        return (mask_tensor, mask,)
 
 
 class GarbageCollect:
@@ -1109,10 +1166,9 @@ class GarbageCollect:
     FUNCTION = "gc_node"
     OUTPUT_NODE = True
 
-    def gc_node(self, start,seed):
+    def gc_node(self, start, seed):
         garbage_collect()
         return (start,)
-
 
 
 NODE_CLASS_MAPPINGS = {
@@ -1140,7 +1196,9 @@ NODE_CLASS_MAPPINGS = {
     "ExpandImageWithColor-badger": ExpandImageWithColor,
     "GetUUID-badger": GetUUID,
     "GetDirName-badger": GetDirName,
-    "IdentifyLinesBasedOnBorderColor-badger": IdentifyLinesBasedOnBorderColor,
+    "GetColorFromBorder-badger": GetColorFromBorder,
+    "IdentifyColorToMask-badger":IdentifyColorToMask,
+    "IdentifyBorderColorToMask-badger":IdentifyBorderColorToMask,
     "GarbageCollect-badger": GarbageCollect,
 
 }

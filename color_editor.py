@@ -68,7 +68,7 @@ def average_color(colors):
     r = int(np.mean([c[0] for c in colors]))
     g = int(np.mean([c[1] for c in colors]))
     b = int(np.mean([c[2] for c in colors]))
-    return f"{r:02x}{g:02x}{b:02x}"
+    return f"#{r:02x}{g:02x}{b:02x}"
 
 
 def fuzzy_color_grouping(colors, threshold):
@@ -101,6 +101,7 @@ def is_similar_color(target_color, current_color, threshold):
 
 
 def find_similar_colors(image, color_string, threshold):
+    color_string = color_string.lstrip('#')
     # 转换颜色字符串为RGB元组
     target_color = tuple(int(color_string[i:i + 2], 16) for i in (0, 2, 4))
 
