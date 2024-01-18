@@ -7,14 +7,19 @@ import torch
 import comfy.utils
 from .videoCut import getCutList, video_to_frames, cutToDir, frames_to_video
 from .seg import get_masks
-from .thick_lines_from_canny import fill_white_segments, find_largest_white_component
-from .remove_line import get_colors, find_similar_colors, most_common_fuzzy_color
+from .line_editor import fill_white_segments, find_largest_white_component
+from .color_editor import get_colors, find_similar_colors, most_common_fuzzy_color
+import gc
 
 
 def getImageSize(IMAGE) -> tuple[int, int]:
     samples = IMAGE.movedim(-1, 1)
     size = samples.shape[3], samples.shape[2]
     return size
+
+
+def maskTensorToImgTensor(maskTensor):
+    return maskTensor.reshape((-1, 1, maskTensor.shape[-2], maskTensor.shape[-1])).movedim(1, -1).expand(-1, -1, -1, 3)
 
 
 def tensorToImg(imageTensor):
@@ -757,6 +762,7 @@ class ApplyMaskToImage:
 
     def apply_mask_to_image(self, image, mask):
         image = tensorToImg(image)
+        mask = maskTensorToImgTensor(mask)
         mask = tensorToImg(mask)
         mask = mask.convert("L")
 
@@ -1071,6 +1077,26 @@ class IdentifyLinesBasedOnBorderColor:
         return (msk_img, mask,)
 
 
+class GarbageCollect:
+    def __init__(self) -> None:
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "start": ("STRING", {"default": None}),
+            },
+        }
+
+    CATEGORY = "badger"
+    RETURN_TYPES = ()
+    FUNCTION = "garbage_collect"
+    OUTPUT_NODE = True
+    def garbage_collect(self, start):
+        gc.collect()
+
+
 NODE_CLASS_MAPPINGS = {
     "ImageOverlap-badger": ImageOverlap,
     "FloatToInt-badger": FloatToInt,
@@ -1097,6 +1123,7 @@ NODE_CLASS_MAPPINGS = {
     "GetUUID-badger": GetUUID,
     "GetDirName-badger": GetDirName,
     "IdentifyLinesBasedOnBorderColor-badger": IdentifyLinesBasedOnBorderColor,
+    "GarbageCollect-badger": GarbageCollect,
 
 }
 
