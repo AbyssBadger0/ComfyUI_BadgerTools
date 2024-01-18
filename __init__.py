@@ -60,6 +60,12 @@ def maskimg_to_mask(mask_img):
     return mask
 
 
+def garbage_collect():
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
+    gc.collect()
+
 class ImageOverlap:
 
     def __init__(self):
@@ -550,6 +556,7 @@ class FrameToVideo:
     def frame_to_video(self, frame_dir, save_path, frame_rate):
         save_path = os.path.abspath(save_path)
         frames_to_video(frame_dir, frame_rate, save_path)
+
         return (save_path,)
 
 
@@ -642,7 +649,7 @@ class findCenterOfMask:
         # Convert to int
         X = float(x_center.item())
         Y = float(y_center.item())
-
+        garbage_collect()
         return (X, Y,)
 
 
@@ -694,7 +701,7 @@ class SegmentToMaskByPoint:
         mask0 = maskimg_to_mask(masks[0])
         mask1 = maskimg_to_mask(masks[1])
         mask2 = maskimg_to_mask(masks[2])
-
+        garbage_collect()
         return (mask0, mask1, mask2,)
 
 
@@ -738,6 +745,7 @@ class CropImageByMask:
         # Return the cropped image and the top-left coordinates of the bounding box
         X = int(leftmost)
         Y = int(topmost)
+        garbage_collect()
         return (cropped_image, X, Y,)
 
 
@@ -777,6 +785,7 @@ class ApplyMaskToImage:
 
         # 合并图像通道和新的alpha通道
         result_image = Image.merge('RGBA', (r, g, b, new_a))
+        garbage_collect()
         return (imgToTensor(result_image),)
 
 
@@ -825,10 +834,7 @@ class DeleteDir:
                 status = 0
                 e_info = str(e)
 
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-            torch.cuda.ipc_collect()
-        gc.collect()
+        garbage_collect()
         return (status, e_info,)
 
 
@@ -869,6 +875,7 @@ class FindThickLinesFromCanny:
         result = find_largest_white_component(result)
         result = result.convert("RGB")
         result_tensor = imgToTensor(result)
+        garbage_collect()
         return (result_tensor,)
 
 
@@ -914,7 +921,7 @@ class TrimTransparentEdges:
         # 裁剪图片
         cropped_img = img.crop((x_min, y_min, x_max + 1, y_max + 1))
         cropped_img = imgToTensor(cropped_img)
-
+        garbage_collect()
         return (cropped_img,)
 
 
@@ -984,7 +991,7 @@ class ExpandImageWithColor:
         new_img.paste(img, (left, top), img)
 
         result = imgToTensor(new_img)
-
+        garbage_collect()
         return (result,)
 
 
@@ -1080,6 +1087,7 @@ class IdentifyLinesBasedOnBorderColor:
         msk_img = imgToTensor(line_mask_img)
         mask = img_to_mask(line_mask_img)
         mask = mask.unsqueeze(0)
+        garbage_collect()
         return (msk_img, mask,)
 
 
@@ -1091,20 +1099,19 @@ class GarbageCollect:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "start": ("STRING", {"default": None}),
+                "start": ("STRING", {"default": "start"}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
             },
         }
 
     CATEGORY = "badger"
-    RETURN_TYPES = ()
-    FUNCTION = "garbage_collect"
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "gc_node"
     OUTPUT_NODE = True
 
-    def garbage_collect(self, start):
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-            torch.cuda.ipc_collect()
-        gc.collect()
+    def gc_node(self, start,seed):
+        garbage_collect()
+        return (start,)
 
 
 
