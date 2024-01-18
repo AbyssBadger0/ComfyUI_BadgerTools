@@ -8,7 +8,7 @@ import comfy.utils
 from .videoCut import getCutList, video_to_frames, cutToDir, frames_to_video
 from .seg import get_masks
 from .line_editor import fill_white_segments, find_largest_white_component
-from .color_editor import get_colors, find_similar_colors, most_common_fuzzy_color
+from .color_editor import get_colors, find_similar_colors, most_common_fuzzy_color, detect_outline
 import gc
 
 
@@ -797,15 +797,15 @@ class DeleteDir:
     OUTPUT_NODE = True
 
     RETURN_TYPES = ("INT", "STRING",)
-    RETURN_NAMES = ("result",)
+    RETURN_NAMES = ("result", "e_info")
     FUNCTION = "delete_dir"
 
     def delete_dir(self, start, dir_path):
         e_info = ""
+        status = 0
         abs_dir_path = os.path.abspath(dir_path)
         if not os.path.exists(abs_dir_path):
             e_info = "路径不存在"
-            return (0, e_info,)
         else:
             try:
                 # 遍历文件夹中的每个文件或子文件夹
@@ -819,11 +819,17 @@ class DeleteDir:
                         os.rmdir(folder_path)  # 删除空文件夹
 
                 os.rmdir(abs_dir_path)  # 最后删除根目录
+                status = 1
                 e_info = "成功删除"
-                return (1, e_info,)
             except Exception as e:
+                status = 0
                 e_info = str(e)
-                return (0, e_info,)
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
+        gc.collect()
+        return (status, e_info,)
 
 
 class FindThickLinesFromCanny:
@@ -1093,8 +1099,13 @@ class GarbageCollect:
     RETURN_TYPES = ()
     FUNCTION = "garbage_collect"
     OUTPUT_NODE = True
+
     def garbage_collect(self, start):
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
         gc.collect()
+
 
 
 NODE_CLASS_MAPPINGS = {

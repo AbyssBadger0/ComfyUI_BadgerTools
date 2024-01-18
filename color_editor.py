@@ -47,10 +47,21 @@ def get_colors(PIL_img, n):
     return color_list
 
 
+def get_neighbors(x, y, width, height):
+    neighbors = []
+    if x > 0:
+        neighbors.append((x - 1, y))
+    if x < width - 1:
+        neighbors.append((x + 1, y))
+    if y > 0:
+        neighbors.append((x, y - 1))
+    if y < height - 1:
+        neighbors.append((x, y + 1))
+    return neighbors
+
+
 def color_distance(c1, c2):
-    (r1, g1, b1) = c1
-    (r2, g2, b2) = c2
-    return np.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2)
+    return sum((a - b) ** 2 for a, b in zip(c1, c2)) ** 0.5
 
 
 def average_color(colors):
@@ -85,8 +96,8 @@ def most_common_fuzzy_color(colors, threshold):
     return average_color(groups[largest_group])
 
 
-def is_color_similar(color1, color2, threshold):
-    return all(abs(c1 - c2) <= threshold for c1, c2 in zip(color1, color2))
+def is_similar_color(target_color, current_color, threshold):
+    return color_distance(target_color, current_color) <= threshold
 
 
 def find_similar_colors(image, color_string, threshold):
@@ -101,10 +112,48 @@ def find_similar_colors(image, color_string, threshold):
     # 遍历每个像素点，检查颜色是否接近目标颜色
     for x in range(image.width):
         for y in range(image.height):
-            if is_color_similar(pixels[x, y], target_color, threshold):
+            if is_similar_color(target_color,pixels[x, y],  threshold):
                 # 将接近的颜色设置为白色
                 output_pixels[x, y] = (255, 255, 255)
 
     return output_image
 
 
+def detect_outline(image, target_hex_color, threshold):
+    target_color = hex_to_rgb(target_hex_color)
+    image = image.convert("RGBA")
+    data = np.array(image)
+
+    # Extract color and alpha channels
+    color_data = data[:, :, :3]
+    alpha_data = data[:, :, 3]
+
+    # Create a mask for the outline
+    mask = np.zeros((image.height, image.width), dtype=np.uint8)
+
+    # Start from the edges of the image
+    edge_pixels = [(x, y) for x in range(image.width) for y in [0, image.height - 1]] + \
+                  [(x, y) for x in [0, image.width - 1] for y in range(1, image.height - 1)]
+
+    # Use a queue to perform a breadth-first search from the edges
+    queue = edge_pixels[:]
+    while queue:
+        x, y = queue.pop(0)
+        if alpha_data[y, x] > 0 and is_similar_color(target_color, color_data[y, x], threshold) and mask[y, x] == 0:
+            # Mark as part of the outline
+            mask[y, x] = 1
+            # Add neighbors to the queue
+            for neighbor in get_neighbors(x, y, image.width, image.height):
+                if mask[neighbor[1], neighbor[0]] == 0:
+                    queue.append(neighbor)
+
+    # Create a new image with a black background
+    result_image = Image.new("RGB", (image.width, image.height), "black")
+    result_data = np.array(result_image)
+
+    # Draw the white pixels based on the mask
+    result_data[mask == 1] = (255, 255, 255)
+
+    # Convert back to PIL image
+    result_image = Image.fromarray(result_data)
+    return result_image
