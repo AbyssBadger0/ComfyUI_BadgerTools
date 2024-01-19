@@ -976,7 +976,7 @@ class ExpandImageWithColor:
 
     def expand_image_with_color(self, image, top, bottom, left, right, color=None):
         img = tensorToImg(image)
-
+        img = img.convert("RGBA")
         # Determine the new size of the image
         new_width = img.width + left + right
         new_height = img.height + top + bottom
