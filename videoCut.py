@@ -9,11 +9,6 @@ from skimage import metrics
 from moviepy.editor import VideoFileClip
 import comfy.model_management as model_management
 
-device = model_management.get_torch_device()
-model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-16-plus-240', pretrained="laion400m_e32", cache_dir="./models/clip")
-model.to(device)
-
-
 def SSIM(imgPath0, imgPath1):
     image1 = cv2.imread(imgPath0)
     image2 = cv2.imread(imgPath1)
@@ -26,24 +21,28 @@ def SSIM(imgPath0, imgPath1):
     return round(ssim_score[0], 2) * 100
 
 
-def imageEncoder(img):
+def imageEncoder(model,preprocess,device,img):
     img1 = Image.fromarray(img).convert('RGB')
     img1 = preprocess(img1).unsqueeze(0).to(device)
     img1 = model.encode_image(img1)
     return img1
 
 
-def generateScore(image1, image2):
+def generateScore(model,preprocess,device,image1, image2):
     test_img = cv2.imread(image1, cv2.IMREAD_UNCHANGED)
     data_img = cv2.imread(image2, cv2.IMREAD_UNCHANGED)
-    img1 = imageEncoder(test_img)
-    img2 = imageEncoder(data_img)
+    img1 = imageEncoder(model,preprocess,device,test_img)
+    img2 = imageEncoder(model,preprocess,device,data_img)
     cos_scores = util.pytorch_cos_sim(img1, img2)
     score = round(float(cos_scores[0][0]) * 100, 2)
     return score
 
 
 def getCutList(imagepath, min_frame, max_frame):
+    device = model_management.get_torch_device()
+    model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-16-plus-240', pretrained="laion400m_e32",
+                                                                 cache_dir="./models/clip")
+    model.to(device)
     pngList = sorted(os.listdir(imagepath))
     cutList = []
     resList = []
@@ -54,7 +53,7 @@ def getCutList(imagepath, min_frame, max_frame):
         num += 1
         imgPath0 = os.path.join(imagepath, pngList[i])
         imgPath1 = os.path.join(imagepath, pngList[i + 1])
-        res = generateScore(imgPath0, imgPath1)
+        res = generateScore(model,preprocess,device,imgPath0, imgPath1)
         print("切割画面（" + str(i + 1) + "/" + str(len(pngList) - 1) + ")" + str(res))
         resList.append(res)
         indexList.append(i)
@@ -77,6 +76,7 @@ def getCutList(imagepath, min_frame, max_frame):
                 i += 1
         else:
             i += 1
+    del model
     print(cutList)
     return cutList
 
