@@ -1,15 +1,15 @@
 import os
 import subprocess
 import shutil
-import torch
 import open_clip
 import cv2
 from sentence_transformers import util
 from PIL import Image
 from skimage import metrics
 from moviepy.editor import VideoFileClip
+import comfy.model_management as model_management
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = model_management.get_torch_device()
 model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-16-plus-240', pretrained="laion400m_e32", cache_dir="./models/clip")
 model.to(device)
 
