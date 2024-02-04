@@ -10,7 +10,7 @@ from skimage import metrics
 from moviepy.editor import VideoFileClip
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-16-plus-240', pretrained="laion400m_e32")
+model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-16-plus-240', pretrained="laion400m_e32", cache_dir="./models/clip")
 model.to(device)
 
 
