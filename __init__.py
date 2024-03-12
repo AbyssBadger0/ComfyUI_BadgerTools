@@ -9,6 +9,7 @@ from .videoCut import getCutList, video_to_frames, cutToDir, frames_to_video
 from .seg import get_masks
 from .line_editor import fill_white_segments, find_largest_white_component
 from .color_editor import get_colors, find_similar_colors, most_common_fuzzy_color, detect_outline
+from .pixel import *
 import gc
 
 
@@ -1169,6 +1170,87 @@ class GarbageCollect:
     def gc_node(self, start, seed):
         garbage_collect()
         return (start,)
+    
+
+class ToPixel:
+    def __init__(self) -> None:
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "original_image": ("IMAGE",),
+                "threshold": ("INT", {
+                    "default": 30,
+                    "min": 0,
+                    "max": 1024,
+                    "step": 1,
+                    "display": "number"
+                }),
+                "pix": ("INT", {
+                    "default": 64,
+                    "min": 1,
+                    "max": 256,
+                    "step": 1,
+                    "display": "number"
+                }),
+                "tile_size": ("INT", {
+                    "default": 8,
+                    "min": 1,
+                    "max": 128,
+                    "step": 1,
+                    "display": "number"
+                }),
+            },
+            "optional": {
+                "color_card": ("IMAGE",),
+            }
+        }
+
+    CATEGORY = "badger"
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "image_to_pixel"
+
+    def image_to_pixel(self, original_image, threshold, pix, tile_size, color_card=None):
+
+        regular_size = tile_size*pix
+
+        original_image = tensorToImg(original_image)
+
+        original_pixels = regular_image(original_image,output_size=(regular_size,regular_size))
+
+        # 创建新的图像，用于存储像素化的结果
+        pixelated_image = Image.new('RGB', (pix, pix))
+
+        if color_card!=None:
+            color_card = tensorToImg(color_card)
+            color_palette = load_color_card(color_card)
+            # 遍历每个8x8的方块
+            for i in range(0, regular_size, tile_size):
+                for j in range(0, regular_size, tile_size):
+                    # 获取当前方块
+                    block = original_pixels[i:i+tile_size, j:j+tile_size].reshape(-1, 3)
+                    # 找到主要颜色
+                    dominant_color = find_dominant_color(block, threshold)
+                    # 匹配到颜色卡中的颜色
+                    matched_color = match_color_to_palette(dominant_color, color_palette)
+                    # 将匹配的颜色赋给对应的像素点
+                    pixelated_image.putpixel((j // tile_size, i // tile_size), matched_color)
+        else:
+            # 遍历每个8x8的方块
+            for i in range(0, regular_size, tile_size):
+                for j in range(0, regular_size, tile_size):
+                    # 获取当前方块
+                    block = original_pixels[i:i+tile_size, j:j+tile_size].reshape(-1, 3)
+                    # 找到主要颜色
+                    dominant_color = find_dominant_color(block, threshold)
+                    # 将主要颜色的平均值赋给对应的像素点
+                    pixelated_image.putpixel((j // tile_size, i // tile_size), tuple(dominant_color.astype(int)))
+
+        pixelated_image = imgToTensor(pixelated_image)
+        return (pixelated_image,)
 
 
 NODE_CLASS_MAPPINGS = {
@@ -1200,6 +1282,7 @@ NODE_CLASS_MAPPINGS = {
     "IdentifyColorToMask-badger":IdentifyColorToMask,
     "IdentifyBorderColorToMask-badger":IdentifyBorderColorToMask,
     "GarbageCollect-badger": GarbageCollect,
+    "ToPixel-badger": ToPixel
 
 }
 
