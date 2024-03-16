@@ -162,12 +162,12 @@ def cutToDir(root_dir, cutList):
     dirIndex = 0
     pngList = sorted(os.listdir(root_dir))
     dirList = []
-    dirPathString = ""
+    dirPathList = []
     for i in range(len(cutList) + 1):
         dirName = str(i).zfill(3)
         dirPath = os.path.join(root_dir, dirName)
         os.mkdir(dirPath)
-        dirPathString += (dirPath + '\n')
+        dirPathList.append(dirPath)
         dirList.append(dirName)
     for png in pngList:
         src = os.path.join(root_dir, png)
@@ -176,4 +176,4 @@ def cutToDir(root_dir, cutList):
         if png in cutList:
             dirIndex += 1
 
-    return dirPathString
+    return "\n".join(dirPathList)
