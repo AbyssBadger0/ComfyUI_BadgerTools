@@ -1250,8 +1250,33 @@ class ToPixel:
                     pixelated_image.putpixel((j // tile_size, i // tile_size), tuple(dominant_color.astype(int)))
 
         pixelated_image = imgToTensor(pixelated_image)
+        garbage_collect()
         return (pixelated_image,)
 
+class StringListToOneLine:
+    def __init__(self) -> None:
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "StringList": ("STRING", {"forceInput": True}),
+                "split":("STRING", {"default": ","})
+            },
+        }
+
+    CATEGORY = "badger"
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "string_line"
+    OUTPUT_NODE = True
+
+    def string_line(self,StringList,split):
+        print(len(StringList))
+        if len(StringList) <= 1:
+            return (StringList,)
+        else :
+            return (split.join(StringList),) 
 
 NODE_CLASS_MAPPINGS = {
     "ImageOverlap-badger": ImageOverlap,
@@ -1282,7 +1307,8 @@ NODE_CLASS_MAPPINGS = {
     "IdentifyColorToMask-badger":IdentifyColorToMask,
     "IdentifyBorderColorToMask-badger":IdentifyBorderColorToMask,
     "GarbageCollect-badger": GarbageCollect,
-    "ToPixel-badger": ToPixel
+    "ToPixel-badger": ToPixel,
+    "StringListToOneLine-badger": StringListToOneLine
 
 }
 

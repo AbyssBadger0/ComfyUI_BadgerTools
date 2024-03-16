@@ -42,7 +42,10 @@ def regular_image(original_image, output_size=(512, 512), fill_color=(255, 255, 
     new_height = int(original_height * ratio)
 
     # 等比缩放图片
-    original_image = original_image.resize((new_width, new_height), Image.ANTIALIAS)
+    try:
+        original_image = original_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+    except Exception as e:
+        original_image = original_image.resize((new_width, new_height), Image.ANTIALIAS)
 
     # 创建一个新的白色背景图片
     new_img = Image.new("RGB", output_size, fill_color)
