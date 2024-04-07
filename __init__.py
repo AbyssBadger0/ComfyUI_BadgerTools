@@ -1253,7 +1253,7 @@ class ToPixel:
         garbage_collect()
         return (pixelated_image,)
 
-class StringListToOneLine:
+class SimpleBoolean:
     def __init__(self) -> None:
         pass
 
@@ -1261,22 +1261,30 @@ class StringListToOneLine:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "StringList": ("STRING", {"forceInput": True}),
-                "split":("STRING", {"default": ","})
+                "String": ("STRING", {"default": ""}),
             },
         }
 
     CATEGORY = "badger"
-    RETURN_TYPES = ("STRING",)
-    FUNCTION = "string_line"
-    OUTPUT_NODE = True
+    RETURN_TYPES = ("INT",)
+    FUNCTION = "simple_boolean"
 
-    def string_line(self,StringList,split):
-        print(len(StringList))
-        if len(StringList) <= 1:
-            return (StringList,)
-        else :
-            return (split.join(StringList),) 
+    def simple_boolean(self,String):
+        String = "result = " + String
+
+        # 创建一个空字典用于exec的局部命名空间
+        namespace = {}
+
+        # 将namespace字典作为exec的第二个参数，指定局部命名空间
+        exec(String, namespace)
+
+        # 从指定的命名空间字典中提取result变量的值
+        result = namespace['result']
+        if result :
+            return (1,)
+        else:
+            return (0,)
+        
 
 NODE_CLASS_MAPPINGS = {
     "ImageOverlap-badger": ImageOverlap,
@@ -1308,7 +1316,7 @@ NODE_CLASS_MAPPINGS = {
     "IdentifyBorderColorToMask-badger":IdentifyBorderColorToMask,
     "GarbageCollect-badger": GarbageCollect,
     "ToPixel-badger": ToPixel,
-    "StringListToOneLine-badger": StringListToOneLine
+    "SimpleBoolean-badger": SimpleBoolean
 
 }
 
