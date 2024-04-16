@@ -71,6 +71,7 @@ def garbage_collect():
     gc.collect()
 
 class LoadImageAdvanced:
+    upscale_methods = ["nearest-exact", "bilinear", "area", "bicubic", "lanczos"]
     @classmethod
     def INPUT_TYPES(s):
         input_dir = folder_paths.get_input_directory()
@@ -78,22 +79,70 @@ class LoadImageAdvanced:
         return {"required":
                     {"image": (sorted(files), {"image_upload": True})},
                 "optional": 
-                    {"color": ("STRING", {"default": "#FFFFFF"})}
+                    {
+                    "color": ("STRING", {"default": "#FFFFFF"}),
+                    "upscale_method": (s.upscale_methods, {"default": "lanczos"}),
+                    "target_width": ("INT", {
+                        "default": None,
+                        "min": 0,
+                        "max": 4096,
+                        "step": 1,
+                        "round": 1,
+                        "display": "number"}),
+                    "target_height": ("INT", {
+                        "default": None,
+                        "min": 0,
+                        "max": 4096,
+                        "step": 1,
+                        "round": 1,
+                        "display": "number"}),
+                    },
+                    
                 }
 
     CATEGORY = "image"
 
     RETURN_TYPES = ("IMAGE", "MASK")
     FUNCTION = "load_image"
-    def load_image(self, image,color):
+    def load_image(self, image,color,upscale_method,target_width,target_height):
         image_path = folder_paths.get_annotated_filepath(image)
         img = Image.open(image_path)
+        width = img.size[0]
+        height = img.size[1]
+        nw = width
+        nh = height
+        top = 0
+        left = 0
+        bottom = 0
+        right = 0
+        if target_width > 0 and target_height > 0 and target_width != width and target_height != height:
+            o_ratio = width / height
+            ratio = target_width / target_height
+            # 原图比期望尺寸更扁，对齐宽，计算高，补上下
+            if (o_ratio >= ratio):
+                upratio = target_width / width
+                nw = target_width
+                nh = round(height * upratio)
+                hdiff = target_height - nh
+                top = math.floor(hdiff / 2)
+                bottom = math.ceil(hdiff / 2)
+            else:
+                upratio = target_height / height
+                nw = round(width * upratio)
+                nh = target_height
+                wdiff = target_width - nw
+                left = math.floor(wdiff / 2)
+                right = math.ceil(wdiff / 2)
+            image = imgToTensor(img)
+            samples = image.movedim(-1,1)
+            s = comfy.utils.common_upscale(samples, nw, nh, upscale_method, crop="disabled")
+            s = s.movedim(1,-1)
+            img = tensorToImg(s)
         if color:
             rgba_color = hex_to_rgba(color)
-            new_img = Image.new("RGBA",img.size, rgba_color)
-            new_img.paste(img, (0, 0), img)
+            new_img = Image.new("RGBA",(nw+left+right,nh+top+bottom), rgba_color)
+            new_img.paste(img, (left, top),img.convert("RGBA"))
             img = new_img
-
 
         output_images = []
         output_masks = []
@@ -1117,6 +1166,8 @@ class ExpandImageWithColor:
 
         # Paste the original image onto the new image
         new_img.paste(img, (left, top), img)
+        if color:
+            new_img = new_img.convert("RGB")
         result = imgToTensor(new_img)
         garbage_collect()
         return (result,)
