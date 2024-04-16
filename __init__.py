@@ -1,16 +1,19 @@
 import math
 import os
+import hashlib
 import uuid
-from PIL import Image
+from PIL import Image, ImageOps, ImageSequence
 import numpy as np
 import torch
 import comfy.utils
 from .videoCut import getCutList, video_to_frames, cutToDir, frames_to_video
 from .seg import get_masks
 from .line_editor import fill_white_segments, find_largest_white_component
-from .color_editor import get_colors, find_similar_colors, most_common_fuzzy_color, detect_outline
+from .color_editor import get_colors, find_similar_colors, most_common_fuzzy_color, detect_outline,hex_to_rgba
 from .pixel import *
 import gc
+import sys
+import folder_paths
 
 
 def getImageSize(IMAGE) -> tuple[int, int]:
@@ -67,6 +70,86 @@ def garbage_collect():
         torch.cuda.ipc_collect()
     gc.collect()
 
+class LoadImageAdvanced:
+    @classmethod
+    def INPUT_TYPES(s):
+        input_dir = folder_paths.get_input_directory()
+        files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
+        return {"required":
+                    {"image": (sorted(files), {"image_upload": True})},
+                "optional": 
+                    {"color": ("STRING", {"default": "#FFFFFF"})}
+                }
+
+    CATEGORY = "image"
+
+    RETURN_TYPES = ("IMAGE", "MASK")
+    FUNCTION = "load_image"
+    def load_image(self, image,color):
+        image_path = folder_paths.get_annotated_filepath(image)
+        img = Image.open(image_path)
+        if color:
+            rgba_color = hex_to_rgba(color)
+            new_img = Image.new("RGBA",img.size, rgba_color)
+            new_img.paste(img, (0, 0), img)
+            img = new_img
+
+
+        output_images = []
+        output_masks = []
+        for i in ImageSequence.Iterator(img):
+            i = ImageOps.exif_transpose(i)
+            if i.mode == 'I':
+                i = i.point(lambda i: i * (1 / 255))
+            image = i.convert("RGB" if color else "RGBA")
+            image = np.array(image).astype(np.float32) / 255.0
+            image = torch.from_numpy(image)[None,]
+            if 'A' in i.getbands():
+                mask = np.array(i.getchannel('A')).astype(np.float32) / 255.0
+                mask = 1. - torch.from_numpy(mask)
+            else:
+                mask = torch.zeros((64,64), dtype=torch.float32, device="cpu")
+            output_images.append(image)
+            output_masks.append(mask.unsqueeze(0))
+
+        if len(output_images) > 1:
+            output_image = torch.cat(output_images, dim=0)
+            output_mask = torch.cat(output_masks, dim=0)
+        else:
+            output_image = output_images[0]
+            output_mask = output_masks[0]
+
+        return (output_image, output_mask)
+
+    @classmethod
+    def IS_CHANGED(s, image):
+        image_path = folder_paths.get_annotated_filepath(image)
+        m = hashlib.sha256()
+        with open(image_path, 'rb') as f:
+            m.update(f.read())
+        return m.digest().hex()
+
+    @classmethod
+    def VALIDATE_INPUTS(s, image):
+        if not folder_paths.exists_annotated_filepath(image):
+            return "Invalid image file: {}".format(image)
+
+        return True
+
+    @classmethod
+    def IS_CHANGED(s, image):
+        image_path = folder_paths.get_annotated_filepath(image)
+        m = hashlib.sha256()
+        with open(image_path, 'rb') as f:
+            m.update(f.read())
+        return m.digest().hex()
+
+    @classmethod
+    def VALIDATE_INPUTS(s, image):
+        if not folder_paths.exists_annotated_filepath(image):
+            return "Invalid image file: {}".format(image)
+
+        return True
 
 class ImageOverlap:
 
@@ -176,6 +259,47 @@ class IntToString:
 
     def intToString(self, int):
         return (str(int),)
+    
+class IntToStringAdvanced:
+ 
+    def __init__(self):
+            pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "int": ("INT", {
+                    "default": 0,
+                    "min": -sys.maxsize - 1,
+                    "max": sys.maxsize,
+                    "step": 1,
+                    "display": "number"
+                    }),
+                "length": ("INT", {
+                    "default": 5,
+                    "min": 0,
+                    "max": 30,
+                    "step": 1,
+                    "display": "number"
+                    }),
+                "prefix":("STRING", {"default": ""}),
+                "suffix":("STRING", {"default": ""}),
+                },
+                
+        }
+
+    RETURN_TYPES = ("STRING",)
+    # RETURN_NAMES = ("image_output_name",)
+
+    FUNCTION = "int_to_string"
+
+    # OUTPUT_NODE = False
+
+    CATEGORY = "badger"
+
+    def int_to_string(self, int,length,prefix,suffix):
+        return (prefix+str(int).zfill(length)+suffix,)
 
 
 class FloatToString:
@@ -977,21 +1101,22 @@ class ExpandImageWithColor:
 
     def expand_image_with_color(self, image, top, bottom, left, right, color=None):
         img = tensorToImg(image)
-        img = img.convert("RGBA")
+        img = img.convert("RGBA")  # 确保图片是RGBA模式
+
         # Determine the new size of the image
         new_width = img.width + left + right
         new_height = img.height + top + bottom
 
-        # Create a new image with the new size and the given background color
+        # 如果提供了颜色，并且是十六进制形式，转换为RGBA格式
         if color:
-            new_img = Image.new("RGBA", (new_width, new_height), color)
+            rgba_color = hex_to_rgba(color)
+            new_img = Image.new("RGBA", (new_width, new_height), rgba_color)
         else:
             # Use transparency if no color was provided
             new_img = Image.new("RGBA", (new_width, new_height), (0, 0, 0, 0))
 
         # Paste the original image onto the new image
         new_img.paste(img, (left, top), img)
-
         result = imgToTensor(new_img)
         garbage_collect()
         return (result,)
@@ -1290,6 +1415,8 @@ NODE_CLASS_MAPPINGS = {
     "ImageOverlap-badger": ImageOverlap,
     "FloatToInt-badger": FloatToInt,
     "IntToString-badger": IntToString,
+    "LoadImageAdvanced-badger": LoadImageAdvanced,
+    "IntToStringAdvanced-badger":IntToStringAdvanced,
     "FloatToString-badger": FloatToString,
     "ImageNormalization-badger": ImageNormalization,
     "ImageScaleToSide-badger": ImageScaleToSide,

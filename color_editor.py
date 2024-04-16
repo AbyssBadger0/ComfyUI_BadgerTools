@@ -11,6 +11,15 @@ def hex_to_rgb(hex_color):
     hex_color = hex_color.lstrip('#')
     return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
 
+def hex_to_rgba(hex_color, alpha=255):
+    """
+    将十六进制颜色字符串转换为RGBA格式。
+    默认透明度（alpha）为255（不透明）。
+    """
+    hex_color = hex_color.lstrip('#')
+    lv = len(hex_color)
+    return tuple(int(hex_color[i:i + lv // 3], 16) for i in range(0, lv, lv // 3)) + (alpha,)
+
 
 def get_colors(PIL_img, n):
     color_list = []
