@@ -1,9 +1,11 @@
+import json
 import math
 import os
 import hashlib
 import uuid
 from PIL import Image, ImageOps, ImageSequence
 import numpy as np
+import requests
 import torch
 import comfy.utils
 from .videoCut import getCutList, video_to_frames, cutToDir, frames_to_video
@@ -1460,6 +1462,52 @@ class SimpleBoolean:
             return (1,)
         else:
             return (0,)
+
+class GETRequset:
+    def __init__(self) -> None:
+        pass
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "url": ("STRING", {"default": ""}),
+                "params_json": ("STRING",{"default": '{"key1":value1,"key2":"value2"}'}),
+                "save_path": ("STRING", {"default": "./output"}),
+            },
+        }
+    CATEGORY = "badger"
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "get_requset"
+    OUTPUT_NODE = True
+
+    def get_requset(self,url,params_json,save_path):
+        result=""
+        json_object = json.loads(params_json)
+        response = requests.get(url, params=json_object)
+        if response.status_code == 200:
+            # 从Content-Disposition头获取文件名
+            content_disposition = response.headers.get('Content-Disposition')
+            if content_disposition:
+                filename_start = content_disposition.index('filename=') + 9  # 9是因为'filename='.length()
+                filename = content_disposition[filename_start:].strip('"')
+            else:
+                filename = 'downloaded_file.wav'  # 如果没有指定，默认文件名
+            # 确保目录存在
+            if not os.path.exists(save_path):
+                os.makedirs(save_path)
+            
+            # 指定本地保存路径
+            local_filepath = os.path.join(save_path, filename)
+            print(local_filepath)
+            
+            # 保存文件
+            with open(local_filepath, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            
+            return (os.path.abspath(local_filepath), )  # 返回保存的文件路径
+        else:
+            return (f"请求失败，状态码：{response.status_code}",)
         
 
 NODE_CLASS_MAPPINGS = {
@@ -1494,7 +1542,8 @@ NODE_CLASS_MAPPINGS = {
     "IdentifyBorderColorToMask-badger":IdentifyBorderColorToMask,
     "GarbageCollect-badger": GarbageCollect,
     "ToPixel-badger": ToPixel,
-    "SimpleBoolean-badger": SimpleBoolean
+    "SimpleBoolean-badger": SimpleBoolean,
+    "GETRequset-badger": GETRequset
 
 }
 
