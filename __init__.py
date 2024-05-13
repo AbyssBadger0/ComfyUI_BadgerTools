@@ -99,7 +99,6 @@ class LoadImageAdvanced:
                         "round": 1,
                         "display": "number"}),
                     },
-                    
                 }
 
     CATEGORY = "image"
@@ -186,21 +185,137 @@ class LoadImageAdvanced:
             return "Invalid image file: {}".format(image)
 
         return True
+    
+class LoadImagesFromDirListAdvanced:
+    upscale_methods = ["nearest-exact", "bilinear", "area", "bicubic", "lanczos"]
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "directory": ("STRING", {"default": ""}),
+            },
+            "optional": {
+                "image_load_cap": ("INT", {"default": 0, "min": 0, "step": 1}),
+                "start_index": ("INT", {"default": 0, "min": 0, "step": 1}),
+                "load_always": ("BOOLEAN", {"default": False, "label_on": "enabled", "label_off": "disabled"}),
+                "color": ("STRING", {"default": "#FFFFFF"}),
+                    "upscale_method": (s.upscale_methods, {"default": "lanczos"}),
+                    "target_width": ("INT", {
+                        "default": None,
+                        "min": 0,
+                        "max": 4096,
+                        "step": 1,
+                        "round": 1,
+                        "display": "number"}),
+                    "target_height": ("INT", {
+                        "default": None,
+                        "min": 0,
+                        "max": 4096,
+                        "step": 1,
+                        "round": 1,
+                        "display": "number"}),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE", "MASK")
+    OUTPUT_IS_LIST = (True, True)
+
+    FUNCTION = "load_images"
+
+    CATEGORY = "image"
 
     @classmethod
-    def IS_CHANGED(s, image):
-        image_path = folder_paths.get_annotated_filepath(image)
-        m = hashlib.sha256()
-        with open(image_path, 'rb') as f:
-            m.update(f.read())
-        return m.digest().hex()
+    def IS_CHANGED(cls, **kwargs):
+        if 'load_always' in kwargs and kwargs['load_always']:
+            return float("NaN")
+        else:
+            return hash(frozenset(kwargs))
 
-    @classmethod
-    def VALIDATE_INPUTS(s, image):
-        if not folder_paths.exists_annotated_filepath(image):
-            return "Invalid image file: {}".format(image)
+    def load_images(self, directory: str,color,upscale_method,target_width,target_height, image_load_cap: int = 0, start_index: int = 0, load_always=False):
+        if not os.path.isdir(directory):
+            raise FileNotFoundError(f"Directory '{directory}' cannot be found.")
+        dir_files = os.listdir(directory)
+        if len(dir_files) == 0:
+            raise FileNotFoundError(f"No files in directory '{directory}'.")
 
-        return True
+        # Filter files by extension
+        valid_extensions = ['.jpg', '.jpeg', '.png', '.webp']
+        dir_files = [f for f in dir_files if any(f.lower().endswith(ext) for ext in valid_extensions)]
+
+        dir_files = sorted(dir_files)
+        dir_files = [os.path.join(directory, x) for x in dir_files]
+
+        # start at start_index
+        dir_files = dir_files[start_index:]
+
+        images = []
+        masks = []
+
+        limit_images = False
+        if image_load_cap > 0:
+            limit_images = True
+        image_count = 0
+
+        for image_path in dir_files:
+            if os.path.isdir(image_path) and os.path.ex:
+                continue
+            if limit_images and image_count >= image_load_cap:
+                break
+            img = Image.open(image_path)
+            width = img.size[0]
+            height = img.size[1]
+            nw = width
+            nh = height
+            top = 0
+            left = 0
+            bottom = 0
+            right = 0
+            if target_width > 0 and target_height > 0 and target_width != width and target_height != height:
+                o_ratio = width / height
+                ratio = target_width / target_height
+                # 原图比期望尺寸更扁，对齐宽，计算高，补上下
+                if (o_ratio >= ratio):
+                    upratio = target_width / width
+                    nw = target_width
+                    nh = round(height * upratio)
+                    hdiff = target_height - nh
+                    top = math.floor(hdiff / 2)
+                    bottom = math.ceil(hdiff / 2)
+                else:
+                    upratio = target_height / height
+                    nw = round(width * upratio)
+                    nh = target_height
+                    wdiff = target_width - nw
+                    left = math.floor(wdiff / 2)
+                    right = math.ceil(wdiff / 2)
+                image = imgToTensor(img)
+                samples = image.movedim(-1,1)
+                s = comfy.utils.common_upscale(samples, nw, nh, upscale_method, crop="disabled")
+                s = s.movedim(1,-1)
+                img = tensorToImg(s)
+            if color:
+                rgba_color = hex_to_rgba(color)
+                new_img = Image.new("RGBA",(nw+left+right,nh+top+bottom), rgba_color)
+                new_img.paste(img, (left, top),img.convert("RGBA"))
+                img = new_img
+            for i in ImageSequence.Iterator(img):
+                i = ImageOps.exif_transpose(i)
+                if i.mode == 'I':
+                    i = i.point(lambda i: i * (1 / 255))
+                image = i.convert("RGB" if color else "RGBA")
+                image = np.array(image).astype(np.float32) / 255.0
+                image = torch.from_numpy(image)[None,]
+                if 'A' in i.getbands():
+                    mask = np.array(i.getchannel('A')).astype(np.float32) / 255.0
+                    mask = 1. - torch.from_numpy(mask)
+                else:
+                    mask = torch.zeros((64,64), dtype=torch.float32, device="cpu")
+
+            images.append(image)
+            masks.append(mask)
+            image_count += 1
+
+        return images, masks
 
 class ImageOverlap:
 
@@ -1515,6 +1630,7 @@ NODE_CLASS_MAPPINGS = {
     "FloatToInt-badger": FloatToInt,
     "IntToString-badger": IntToString,
     "LoadImageAdvanced-badger": LoadImageAdvanced,
+    "LoadImagesFromDirListAdvanced-badger":LoadImagesFromDirListAdvanced,
     "IntToStringAdvanced-badger":IntToStringAdvanced,
     "FloatToString-badger": FloatToString,
     "ImageNormalization-badger": ImageNormalization,
