@@ -22,6 +22,10 @@ def SSIM(imgPath0, imgPath1):
 
 
 def imageEncoder(model,preprocess,device,img):
+    if img.dtype == 'uint16': 
+        img = (img / 256).astype('uint8')
+    if img.shape[2] == 4:  
+        img = img[:, :, :3] 
     img1 = Image.fromarray(img).convert('RGB')
     img1 = preprocess(img1).unsqueeze(0).to(device)
     img1 = model.encode_image(img1)
