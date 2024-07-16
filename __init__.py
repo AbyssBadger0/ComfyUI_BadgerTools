@@ -12,6 +12,7 @@ from .videoCut import getCutList, video_to_frames, cutToDir, frames_to_video
 from .seg import get_masks
 from .line_editor import fill_white_segments, find_largest_white_component
 from .color_editor import get_colors, find_similar_colors, most_common_fuzzy_color, detect_outline,hex_to_rgba
+from .image_editor import rotate_image_with_padding
 from .pixel import *
 import gc
 import sys
@@ -1624,6 +1625,29 @@ class GETRequset:
         else:
             return (f"请求失败，状态码：{response.status_code}",)
         
+class RotateImageWithPadding:
+    def __init__(self) -> None:
+        pass
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "original_image": ("IMAGE",),
+            },
+        }
+    CATEGORY = "badger"
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "rotate_and_pad_image"
+    OUTPUT_NODE = True
+
+    def rotate_and_pad_image(self,original_image):
+        img_PIL = tensorToImg(original_image)
+        result = rotate_image_with_padding(img_PIL)
+        img_tensor = imgToTensor(result)
+        garbage_collect()
+            
+        return (img_tensor,)
+        
 
 NODE_CLASS_MAPPINGS = {
     "ImageOverlap-badger": ImageOverlap,
@@ -1659,7 +1683,8 @@ NODE_CLASS_MAPPINGS = {
     "GarbageCollect-badger": GarbageCollect,
     "ToPixel-badger": ToPixel,
     "SimpleBoolean-badger": SimpleBoolean,
-    "GETRequset-badger": GETRequset
+    "GETRequset-badger": GETRequset,
+    "RotateImageWithPadding":RotateImageWithPadding
 
 }
 
