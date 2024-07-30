@@ -59,3 +59,33 @@ def regular_image(original_image, output_size=(512, 512), fill_color=(255, 255, 
 
     original_pixels = np.array(new_img)
     return original_pixels
+
+def to_pixel(original_image, threshold, pix, tile_size, color_card=None):
+    regular_size = tile_size*pix
+    original_pixels = regular_image(original_image,output_size=(regular_size,regular_size))
+    # 创建新的图像，用于存储像素化的结果
+    pixelated_image = Image.new('RGB', (pix, pix))
+    if color_card!=None:
+        color_palette = load_color_card(color_card)
+        # 遍历每个8x8的方块
+        for i in range(0, regular_size, tile_size):
+            for j in range(0, regular_size, tile_size):
+                # 获取当前方块
+                block = original_pixels[i:i+tile_size, j:j+tile_size].reshape(-1, 3)
+                # 找到主要颜色
+                dominant_color = find_dominant_color(block, threshold)
+                # 匹配到颜色卡中的颜色
+                matched_color = match_color_to_palette(dominant_color, color_palette)
+                # 将匹配的颜色赋给对应的像素点
+                pixelated_image.putpixel((j // tile_size, i // tile_size), matched_color)
+    else:
+        # 遍历每个8x8的方块
+        for i in range(0, regular_size, tile_size):
+            for j in range(0, regular_size, tile_size):
+                # 获取当前方块
+                block = original_pixels[i:i+tile_size, j:j+tile_size].reshape(-1, 3)
+                # 找到主要颜色
+                dominant_color = find_dominant_color(block, threshold)
+                # 将主要颜色的平均值赋给对应的像素点
+                pixelated_image.putpixel((j // tile_size, i // tile_size), tuple(dominant_color.astype(int)))
+    return pixelated_image
