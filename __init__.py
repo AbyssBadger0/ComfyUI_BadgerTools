@@ -74,6 +74,8 @@ def garbage_collect():
     gc.collect()
 
 class LoadImageAdvanced:
+    def __init__(self):
+        pass
     upscale_methods = ["nearest-exact", "bilinear", "area", "bicubic", "lanczos"]
     @classmethod
     def INPUT_TYPES(s):
@@ -86,27 +88,25 @@ class LoadImageAdvanced:
                     "color": ("STRING", {"default": "#FFFFFF"}),
                     "upscale_method": (s.upscale_methods, {"default": "lanczos"}),
                     "target_width": ("INT", {
-                        "default": None,
+                        "default": 0,
                         "min": 0,
                         "max": 4096,
                         "step": 1,
-                        "round": 1,
                         "display": "number"}),
                     "target_height": ("INT", {
-                        "default": None,
+                        "default": 0,
                         "min": 0,
                         "max": 4096,
                         "step": 1,
-                        "round": 1,
                         "display": "number"}),
-                    },
+                    }
                 }
 
-    CATEGORY = "image"
+    CATEGORY = "badger"
 
     RETURN_TYPES = ("IMAGE", "MASK")
-    FUNCTION = "load_image"
-    def load_image(self, image,color,upscale_method,target_width,target_height):
+    FUNCTION = "load_image_advanced"
+    def load_image_advanced(self, image,color,upscale_method,target_width,target_height):
         image_path = folder_paths.get_annotated_filepath(image)
         img = Image.open(image_path)
         width = img.size[0]
@@ -188,6 +188,8 @@ class LoadImageAdvanced:
         return True
     
 class LoadImagesFromDirListAdvanced:
+    def __init__(self):
+        pass
     upscale_methods = ["nearest-exact", "bilinear", "area", "bicubic", "lanczos"]
     @classmethod
     def INPUT_TYPES(s):
@@ -202,18 +204,16 @@ class LoadImagesFromDirListAdvanced:
                 "color": ("STRING", {"default": "#FFFFFF"}),
                     "upscale_method": (s.upscale_methods, {"default": "lanczos"}),
                     "target_width": ("INT", {
-                        "default": None,
+                        "default": 0,
                         "min": 0,
                         "max": 4096,
                         "step": 1,
-                        "round": 1,
                         "display": "number"}),
                     "target_height": ("INT", {
-                        "default": None,
+                        "default": 0,
                         "min": 0,
                         "max": 4096,
                         "step": 1,
-                        "round": 1,
                         "display": "number"}),
             }
         }
@@ -223,7 +223,7 @@ class LoadImagesFromDirListAdvanced:
 
     FUNCTION = "load_images"
 
-    CATEGORY = "image"
+    CATEGORY = "badger"
 
     @classmethod
     def IS_CHANGED(cls, **kwargs):
@@ -750,7 +750,7 @@ class VideoToFrame:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "video_path": ("STRING", {"default": None}),
+                "video_path": ("STRING", {"default": ""}),
                 "save_name": ("STRING", {"default": "temp"}),
                 "min_side_length": ("INT", {
                     "default": 512,
@@ -790,7 +790,7 @@ class VideoCutFromDir:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "frame_dir": ("STRING", {"default": None}),
+                "frame_dir": ("STRING", {"default": ""}),
                 "min_frame": ("INT", {
                     "default": 16,
                     "min": 1,
@@ -1090,7 +1090,7 @@ class DeleteDir:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "start": ("STRING", {"default": None}),
+                "start": ("STRING", {"default": ""}),
                 "dir_path": ("STRING", {"default": ""}),
             }
         }
@@ -1257,7 +1257,7 @@ class ExpandImageWithColor:
                 }),
             },
             "optional": {
-                "color": ("STRING", {"default": None}),
+                "color": ("STRING", {"default": ""}),
             }
         }
 
