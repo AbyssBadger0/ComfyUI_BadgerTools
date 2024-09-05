@@ -1629,7 +1629,7 @@ class NormalizationNumber:
                 "input_min": ("FLOAT", {"default": 0.1, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "input_max": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "target_min": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
-                "target_mid": ("FLOAT", {"default": 0.1, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "target_mid": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "target_max": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 1.0, "step": 0.01}),
             },
         }
@@ -1647,7 +1647,7 @@ class NormalizationNumber:
         if input_value > input_max:
             input_value = input_max
         if target_mid > target_max or target_mid < target_min:
-            target_mid = (target_max - target_min)/2
+            target_mid = (target_max + target_min)/2
         if input_value <= half_input_max:
             # 映射 (input_min ~ 0.5 * input_max) 到 (target_min ~ target_mid)
             normalized_value = (input_value - input_min) / (half_input_max - input_min)
