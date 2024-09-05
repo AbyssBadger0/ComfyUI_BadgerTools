@@ -1607,7 +1607,7 @@ class RotateImageWithPadding:
     CATEGORY = "badger"
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "rotate_and_pad_image"
-    OUTPUT_NODE = True
+    OUTPUT_NODE = False
 
     def rotate_and_pad_image(self,original_image):
         img_PIL = tensorToImg(original_image)
@@ -1616,6 +1616,47 @@ class RotateImageWithPadding:
         garbage_collect()
             
         return (img_tensor,)
+    
+class NormalizationNumber:
+    def __init__(self) -> None:
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "input_value": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "input_min": ("FLOAT", {"default": 0.1, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "input_max": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "target_min": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "target_mid": ("FLOAT", {"default": 0.6, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "target_max": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 1.0, "step": 0.01}),
+            },
+        }
+
+    CATEGORY = "badger"
+    RETURN_TYPES = ("FLOAT", "INT")
+    FUNCTION = "normalization_number"
+    OUTPUT_NODE = False
+
+    def normalization_number(self, input_value, input_min, input_max, target_min, target_mid, target_max):
+        output_float = 0
+        half_input_max = 0.5 * input_max
+        if input_value < input_min:
+            input_value = input_min
+        if input_value > input_max:
+            input_value = input_max
+
+        if input_value <= half_input_max:
+            # 映射 (input_min ~ 0.5 * input_max) 到 (target_min ~ target_mid)
+            normalized_value = (input_value - input_min) / (half_input_max - input_min)
+            output_float = target_min + (normalized_value * (target_mid - target_min))
+        else:
+            # 映射 (0.5 * input_max ~ input_max) 到 (target_mid ~ target_max)
+            normalized_value = (input_value - half_input_max) / (input_max - half_input_max)
+            output_float = target_mid + (normalized_value * (target_max - target_mid))
+
+        return (output_float, int(output_float))
         
 
 NODE_CLASS_MAPPINGS = {
@@ -1653,8 +1694,8 @@ NODE_CLASS_MAPPINGS = {
     "ToPixel-badger": ToPixel,
     "SimpleBoolean-badger": SimpleBoolean,
     "GETRequset-badger": GETRequset,
-    "RotateImageWithPadding":RotateImageWithPadding
-
+    "RotateImageWithPadding":RotateImageWithPadding,
+    "NormalizationNumber-badger":NormalizationNumber
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
