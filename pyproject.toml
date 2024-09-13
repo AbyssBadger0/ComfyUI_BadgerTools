@@ -1,0 +1,15 @@
+[project]
+name = "comfyui_badgertools"
+description = "Nodes:ImageOverlap-badger, FloatToInt-badger, IntToString-badger, FloatToString-badger, ImageNormalization-badger, ImageScaleToSide-badger, NovelToFizz-badger."
+version = "1.0.0"
+license = "LICENSE"
+dependencies = ["open_clip_torch", "sentence_transformers", "pyyaml", "tqdm", "numpy", "easydict==1.9.0", "scikit-image", "scikit-learn", "opencv-python", "tensorflow", "joblib", "matplotlib", "pandas", "albumentations==0.5.2", "hydra-core==1.1.0", "pytorch-lightning==1.2.9", "tabulate", "kornia==0.5.0", "webdataset", "packaging", "wldhx.yadisk-direct", "timm", "moviepy"]
+
+[project.urls]
+Repository = "https://github.com/AbyssYuan0/ComfyUI_BadgerTools"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "ComfyUI_BadgerTools"
+Icon = ""
