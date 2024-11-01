@@ -172,13 +172,13 @@ class LoadImageAdvanced:
 
         return (output_image, output_mask)
 
-    # @classmethod
-    # def IS_CHANGED(s, image):
-    #     image_path = folder_paths.get_annotated_filepath(image)
-    #     m = hashlib.sha256()
-    #     with open(image_path, 'rb') as f:
-    #         m.update(f.read())
-    #     return m.digest().hex()
+    @classmethod
+    def IS_CHANGED(s,image,color,upscale_method,target_width,target_height):
+        image_path = folder_paths.get_annotated_filepath(image)
+        m = hashlib.sha256()
+        with open(image_path, 'rb') as f:
+            m.update(f.read())
+        return m.digest().hex()
 
     @classmethod
     def VALIDATE_INPUTS(s, image):
