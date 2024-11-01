@@ -1658,7 +1658,38 @@ class NormalizationNumber:
             output_float = target_mid + (normalized_value * (target_max - target_mid))
 
         return (output_float, int(output_float))
-        
+
+class Find_closest_factors:
+    def __init__(self) -> None:
+        pass
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "number": ("INT", {"default": 1}),
+            },
+        }
+    
+    CATEGORY = "badger"
+    RETURN_TYPES = ("INT", "INT")
+    FUNCTION = "find_closest_factors"
+    OUTPUT_NODE = False
+
+    def find_closest_factors(self,number):
+    # """
+    # 找到给定数字n最接近相等的两个整数乘数。
+    
+    # 参数:
+    # n (int): 需要分解的正整数
+    
+    # 返回:
+    # tuple: 两个整数乘数，按升序排列
+    # """
+    # 从平方根向下取整开始寻找因子
+        for i in range(int(math.sqrt(number)), 0, -1):
+            if number % i == 0:
+                return (i, number // i)
+        return (1, number)  # 如果没有找到合适的因子，返回(1, n)
 
 NODE_CLASS_MAPPINGS = {
     "ImageOverlap-badger": ImageOverlap,
@@ -1696,7 +1727,8 @@ NODE_CLASS_MAPPINGS = {
     "SimpleBoolean-badger": SimpleBoolean,
     "GETRequset-badger": GETRequset,
     "RotateImageWithPadding":RotateImageWithPadding,
-    "NormalizationNumber-badger":NormalizationNumber
+    "NormalizationNumber-badger":NormalizationNumber,
+    "Find_closest_factors-badger":Find_closest_factors
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
