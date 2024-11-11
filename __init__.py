@@ -1691,6 +1691,54 @@ class Find_closest_factors:
                 return (i, number // i)
         return (1, number)  # 如果没有找到合适的因子，返回(1, n)
 
+class ReduceColors:
+    def __init__(self) -> None:
+        pass
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "n_colors": ("INT", {"default": 16, "min": 1, "max": 256, "step": 1}),
+            },
+        }
+    CATEGORY = "badger"
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "reduce_colors_to_n"
+    OUTPUT_NODE = False
+
+    def reduce_colors_to_n(self,image,n_colors):
+        img_PIL = tensorToImg(image)
+        result = reduce_colors(img_PIL,n_colors)
+        img_tensor = imgToTensor(result)
+        garbage_collect()
+        return (img_tensor,)
+    
+class MapColorsToPalette:
+    def __init__(self) -> None:
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s) :
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "color_card": ("IMAGE",),
+            }
+        }
+    CATEGORY = "badger"
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "map_colors_to_color_palette"
+    OUTPUT_NODE = False
+
+    def map_colors_to_color_palette(self, image, color_card):
+        img_PIL = tensorToImg(image)
+        color_card_PIL = tensorToImg(color_card)
+        new_img = map_colors_to_palette(img_PIL, color_card_PIL)
+        img_tensor = imgToTensor(new_img)
+        return (img_tensor,)
+
+
 NODE_CLASS_MAPPINGS = {
     "ImageOverlap-badger": ImageOverlap,
     "FloatToInt-badger": FloatToInt,
@@ -1728,7 +1776,9 @@ NODE_CLASS_MAPPINGS = {
     "GETRequset-badger": GETRequset,
     "RotateImageWithPadding":RotateImageWithPadding,
     "NormalizationNumber-badger":NormalizationNumber,
-    "Find_closest_factors-badger":Find_closest_factors
+    "Find_closest_factors-badger":Find_closest_factors,
+    "ReduceColors":ReduceColors,
+    "MapColorsToPalette":MapColorsToPalette,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {

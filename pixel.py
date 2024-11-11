@@ -1,5 +1,6 @@
 from PIL import Image
 import numpy as np
+import torch
 
 # 计算两个颜色之间的距离
 def color_distance(color1, color2):
@@ -89,3 +90,51 @@ def to_pixel(original_image, threshold, pix, tile_size, color_card=None):
                 # 将主要颜色的平均值赋给对应的像素点
                 pixelated_image.putpixel((j // tile_size, i // tile_size), tuple(dominant_color.astype(int)))
     return pixelated_image
+
+def map_colors_to_palette(image, palette):
+
+    # 将图像和调色板转换为PyTorch张量
+    image_tensor = torch.tensor(np.array(image), dtype=torch.float32).cuda()
+    palette_tensor = torch.tensor(np.array(palette), dtype=torch.float32).cuda()
+
+    # 重塑张量以便进行计算
+    image_reshaped = image_tensor.view(-1, 3)
+    palette_reshaped = palette_tensor.view(-1, 3)
+
+    # 计算图像中每个像素与调色板中每种颜色的欧几里得距离
+    distances = torch.cdist(image_reshaped, palette_reshaped)
+
+    # 找到每个像素的最近颜色
+    nearest_color_indices = torch.argmin(distances, dim=1)
+
+    # 使用最近的颜色索引创建新图像
+    new_image_flat = palette_reshaped[nearest_color_indices]
+    new_image = new_image_flat.view(image_tensor.shape)
+
+    # 将结果转换回PIL图像并保存
+    result_image = Image.fromarray(new_image.byte().cpu().numpy())
+    return result_image
+
+def reduce_colors(img, n_colors=16):
+    # 将图片转换为numpy数组
+    img_array = np.array(img)
+    
+    # 将图片reshape为二维数组
+    original_shape = img_array.shape
+    pixels = img_array.reshape((-1, 3))
+    
+    # 使用K-means算法来减少颜色
+    from sklearn.cluster import KMeans
+    kmeans = KMeans(n_clusters=n_colors, random_state=42)
+    kmeans.fit(pixels)
+    
+    # 替换每个像素的颜色为其最近的中心点
+    new_pixels = kmeans.cluster_centers_[kmeans.labels_]
+    
+    # 将新的像素值reshape回原来的形状
+    new_img_array = new_pixels.reshape(original_shape).astype(np.uint8)
+    
+    # 创建新的图片
+    new_img = Image.fromarray(new_img_array)
+    
+    return new_img
