@@ -1739,6 +1739,36 @@ class MapColorsToPalette:
         return (img_tensor,)
 
 
+class ToPixelV2:
+    def __init__(self) -> None:
+        pass
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "abstraction": ("INT", {"default": 16, "min": 1, "max": 1024, "step": 1}),
+                "pixel_size": ("INT", {"default": 64, "min": 1, "max": 1024, "step": 1}),
+                "pixel_tile_size": ("INT", {"default": 16, "min": 1, "max": 128, "step": 1}),
+                "preview_size": ("INT", {"default": 512, "min": 1, "max": 2048, "step": 1}),
+            },
+        }
+    
+    CATEGORY = "badger"
+    RETURN_TYPES = ("IMAGE","IMAGE")
+    RETURN_NAMES = ("pixel","preview")
+    FUNCTION = "photo_to_pixel"
+    OUTPUT_NODE = False
+
+    def photo_to_pixel(self,image,abstraction,pixel_size,pixel_tile_size,preview_size):
+        image = tensorToImg(image)
+        img_output,img_preview = convert_photo_to_pixel(image,abstraction,pixel_size,pixel_tile_size,preview_size)
+        img_output_tensor = imgToTensor(img_output)
+        img_preview_tensor = imgToTensor(img_preview)
+        garbage_collect()
+        return (img_output_tensor,img_preview_tensor)
+
+
 NODE_CLASS_MAPPINGS = {
     "ImageOverlap-badger": ImageOverlap,
     "FloatToInt-badger": FloatToInt,
@@ -1774,11 +1804,12 @@ NODE_CLASS_MAPPINGS = {
     "ToPixel-badger": ToPixel,
     "SimpleBoolean-badger": SimpleBoolean,
     "GETRequset-badger": GETRequset,
-    "RotateImageWithPadding":RotateImageWithPadding,
+    "RotateImageWithPadding-badger":RotateImageWithPadding,
     "NormalizationNumber-badger":NormalizationNumber,
     "Find_closest_factors-badger":Find_closest_factors,
-    "ReduceColors":ReduceColors,
-    "MapColorsToPalette":MapColorsToPalette,
+    "ReduceColors-badger":ReduceColors,
+    "MapColorsToPalette-badger":MapColorsToPalette,
+    "ToPixelV2-badger":ToPixelV2
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
